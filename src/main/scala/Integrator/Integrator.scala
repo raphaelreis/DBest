@@ -1,5 +1,0 @@
-package Integrator
-
-class Integrator {
-    
-}
