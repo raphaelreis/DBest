@@ -15,10 +15,11 @@ object DBest {
     // val root = "file:///scratch/ml_aqp/"
     // val fileName = "data/sf10/store_sales.dat"
     val root = ""
-    val fileName = "data/store_sales_smple.dat"
+    val fileName = "data/store_sales_sample.dat"
 
     var client: DBestClient = new DBestClient(root + fileName)
-    client.simpleQuery1()
+    // client.simpleQuery1()
+    client.simpleQuery1WithModel()
 
   }
 }
