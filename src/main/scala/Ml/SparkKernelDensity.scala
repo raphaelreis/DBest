@@ -23,8 +23,8 @@ class SparkKernelDensity(bandWidth: Double = 1.0) {
     //     val collection: Array[Double] = df.select(x).collect().toArray.map(row => row.asInstanceOf[Double])
     // }
 
-    def fit(df: DataFrame, column: String): KernelDensity = {
-        kd.setSample(df.select(column).rdd.map((r: Row) => r.getDouble(0))).setBandwidth(bandWidth)
+    def fit(df: DataFrame, x: Array[String]): KernelDensity = {
+        kd.setSample(df.select(x.head, x.tail: _*).rdd.map((r: Row) => r.getDouble(0))).setBandwidth(bandWidth)
     }
 
     def predict(point: Array[Double]) = {
