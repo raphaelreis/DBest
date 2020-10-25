@@ -3,3 +3,9 @@
 .vscode
 project/
 target/
+src/main/resources/
+src/main/python
+data/
+specification.pdf
+excel/
+
