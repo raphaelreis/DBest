@@ -6,6 +6,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.mllib.stat.KernelDensity
 import Ml._
 import QueryEngine._
+import DataLoader._
 import org.apache.spark.ml.regression.LinearRegressionModel
 
 
@@ -17,53 +18,47 @@ class DBestClient(dataset: String) {
       .master("local")
       .appName("DBest client")
       .getOrCreate()
-    
-    def loadDataset(dataset: String): Unit = {
-        df = spark.read.format("csv")
-            .option("header", false)
-            .option("delimiter", "|")
-            .option("inferSchema", "true")
-            .option("mode", "DROPMALFORMED")
-            .load(dataset).drop("_c23")
-        df.createOrReplaceTempView("store_sales")
-        df = df.na.drop().cache()
-    }
+
+    val dload = new DataLoader(spark)
+
 
     if (Files.exists(Paths.get(dataset))) {
-        loadDataset(dataset)
+        // loadDataset(dataset)
+        df = dload.loadTable(dataset)
     } else {
         throw new Exception("Dataset does not exist.")
     }
 
-    //sampling
-    // val fraction = 0.2
-    // val sampler = new Sampler(df)
-    // val sampled_df = sampler.uniformSampling(fraction)
-    // logger.info("sampled_df.count(): " + sampled_df.count())
-
-
-
-    def simpleQuery1() {
+    def simpleQuery1(A: Double, B: Double) {
         /** Run simple count query with filtering */
-        val q1 = "SELECT COUNT(*) FROM store_sales WHERE _c12 BETWEEN 50 AND 100"
+        val q1 = s"SELECT COUNT(*) FROM store_sales WHERE _c12 BETWEEN $A AND $B"
         val res1 = spark.sqlContext.sql(q1)
         spark.time(res1.show())
     }
 
-    def simpleQuery1WithModel() {
+    def simpleQuery1WithModel(A: Double, B: Double) {
         /**
           * Same as simpleQuery1 but with AQP
           */
-        val d = new SparkKernelDensity(3.0)
-        val kde = d.fit(df, Array("_c12"))
-        val lr = new LinearRegressor
-        val qe = new QueryEngine(spark, kde, lr.model, df.count().toInt)
 
-        val (count, elipseTime) = qe.approxCount(50, 100, 0.01)
+        val x = Array("_c12")
+        val y = "_c20"
+
+        val d = new SparkKernelDensity(3.0)
+        val kde = d.fit(df, x)
+        val lr = new LinearRegressor
+        val lrm = lr.fit(df, x, y)
+        val qe = new QueryEngine(
+            spark,
+            kde.kd,
+            lr.model.stages(1).asInstanceOf[LinearRegressionModel],
+            df.count().toInt
+        )
+
+        val (count, elipseTime) = qe.approxCount(A, B, 0.01)
 
         println(s"Count value with model: $count")
         println(s"Time to compute count: $elipseTime")
-
     }
 
     def simpleQuery2() {
@@ -82,12 +77,16 @@ class DBestClient(dataset: String) {
         val lr = new LinearRegressor
         val lrm = lr.fit(df, x, y)
 
-        val qe = new QueryEngine(spark, kde, lrm, df.count().toInt)
+        val qe = new QueryEngine(
+            spark,
+            kde.kd,
+            lrm.stages(1).asInstanceOf[LinearRegressionModel],
+            df.count().toInt
+        )
         val (avg, elipseTime) = qe.approxAvg(df, x, 5, 70, 0.01)
 
         println(s"AVG value with model: $avg")
         println(s"Time to compute count: $elipseTime")
-
     }
 
     def simpleQuery3() {
@@ -106,10 +105,15 @@ class DBestClient(dataset: String) {
         val lr = new LinearRegressor
         val lrm = lr.fit(df, x, y)
 
-        val qe = new QueryEngine(spark, kde, lrm, df.count().toInt)
+        val qe = new QueryEngine(
+            spark,
+            kde.kd,
+            lrm.stages(1).asInstanceOf[LinearRegressionModel],
+            df.count().toInt
+        )
         val (sum, elipseTime) = qe.approxSum(df, x, 5, 70, 0.01)
 
-        println(s"AVG value with model: $avg")
+        println(s"SUM value with model: $sum")
         println(s"Time to compute count: $elipseTime")
 
     }
