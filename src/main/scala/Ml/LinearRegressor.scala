@@ -18,10 +18,11 @@ import org.apache.spark.ml.PipelineModel
 class LinearRegressor extends DBestModel {
     
     val name = "linreg"
-    val isSerializable = false
     var model: PipelineModel = _
 
-    def fit(df: DataFrame, x: Array[String], y: String): PipelineModel = {
+    def getLinearRegressionModel() = model.stages(1).asInstanceOf[LinearRegressionModel]
+    
+    def fit(df: DataFrame, x: Array[String], y: String): LinearRegressor = {
 
         val assembler = new VectorAssembler()
             .setInputCols(x)
@@ -36,10 +37,14 @@ class LinearRegressor extends DBestModel {
             .setStages(Array(assembler, lr))
 
         model = pipeline.fit(df)
-        model
+        this
     }
 
-    def save(fileName: String) {
+    def setModel(mod: PipelineModel) = {
+        model = mod
+    }
+
+    def save(fileName: String) = {
         model.write.overwrite().save(fileName)
     }
 }

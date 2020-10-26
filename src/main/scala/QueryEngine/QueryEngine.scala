@@ -10,9 +10,14 @@ import org.apache.spark.ml.regression.LinearRegressionModel
 import org.apache.spark.sql._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.ml.feature.VectorAssembler
+import Ml.SparkKernelDensity
+import Ml.LinearRegressor
 
-class QueryEngine(spark: SparkSession, kde: KernelDensity, reg: LinearRegressionModel, numberTrainingPoint: Int) {
+class QueryEngine(spark: SparkSession, skd: SparkKernelDensity, lr: LinearRegressor, numberTrainingPoint: Int) {
     
+    private var kde = skd.getKernelDensity()
+    private var reg = lr.getLinearRegressionModel()
+
     def approxAvg(df: DataFrame, x: Array[String], xMin: Double, xMax: Double, precision: Double): (Double, Double) = {
         val t0 = System.nanoTime()
 

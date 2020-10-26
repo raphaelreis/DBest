@@ -10,23 +10,26 @@ import DataLoader._
 import org.apache.spark.ml.regression.LinearRegressionModel
 
 
-class DBestClient(dataset: String) {
+class DBestClient(table: String) {
 
     var df: DataFrame = _
 
     val spark: SparkSession = SparkSession.builder
-      .master("local")
-      .appName("DBest client")
-      .getOrCreate()
+        .master("local")
+        .appName("DBest client")
+        .getOrCreate()
 
     val dload = new DataLoader(spark)
 
 
-    if (Files.exists(Paths.get(dataset))) {
-        // loadDataset(dataset)
-        df = dload.loadTable(dataset)
+    if (Files.exists(Paths.get(table))) {
+        df = dload.loadTable(table)
     } else {
-        throw new Exception("Dataset does not exist.")
+        throw new Exception("Table does not exist.")
+    }
+
+    def close() = {
+        spark.stop()
     }
 
     def simpleQuery1(A: Double, B: Double) {
@@ -44,14 +47,17 @@ class DBestClient(dataset: String) {
         val x = Array("_c12")
         val y = "_c20"
 
+        // val models = new ModelWrapper()
+        // models.fitOrLoad(df, x, y)
+
         val d = new SparkKernelDensity(3.0)
         val kde = d.fit(df, x)
         val lr = new LinearRegressor
         val lrm = lr.fit(df, x, y)
         val qe = new QueryEngine(
             spark,
-            kde.kd,
-            lr.model.stages(1).asInstanceOf[LinearRegressionModel],
+            kde,
+            lr,
             df.count().toInt
         )
 
@@ -79,8 +85,8 @@ class DBestClient(dataset: String) {
 
         val qe = new QueryEngine(
             spark,
-            kde.kd,
-            lrm.stages(1).asInstanceOf[LinearRegressionModel],
+            kde,
+            lrm,
             df.count().toInt
         )
         val (avg, elipseTime) = qe.approxAvg(df, x, 5, 70, 0.01)
@@ -107,8 +113,8 @@ class DBestClient(dataset: String) {
 
         val qe = new QueryEngine(
             spark,
-            kde.kd,
-            lrm.stages(1).asInstanceOf[LinearRegressionModel],
+            kde,
+            lrm,
             df.count().toInt
         )
         val (sum, elipseTime) = qe.approxSum(df, x, 5, 70, 0.01)

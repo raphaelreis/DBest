@@ -3,30 +3,36 @@ package Ml
 import java.io._
 import org.apache.log4j.{Level, Logger}
 import breeze.numerics.log
+import org.apache.spark.ml.PipelineModel
+import java.nio.file.Files
+import java.nio.file.Paths
+import Tools._
 
 
-class ModelIO(model: DBestModel, x: Array[String], y: String){
+class ModelIO(x: Array[String], y: String){
     
     val logger = Logger.getLogger(this.getClass().getName())
 
-    /**
-      * Change for relative file path
-      */
-    var fileName = "/Users/Raphael/CS/github.com/DBest/src/main/resources/models/" + model.name + "/" + x.mkString("_")
+    def exists(model: DBestModel) = {
+        val folderPath = makeFileName(model, x, y)
+        Files.exists(Paths.get(folderPath))
+    }
 
-    def writeModel() = model match {
+    def writeModel(model: DBestModel) = model match {
         case model: LinearRegressor => {
-            fileName = fileName + y
+            val fileName = makeFileName(model, x, y)
             model.save(fileName)
         }
-        case model: SparkKernelDensity => {
-            logger.info("Start serialization kernel density")
-            logger.info("fileName: " + fileName)
-            val oos = new ObjectOutputStream(new FileOutputStream(fileName))
-            oos.writeObject(model)
-            oos.close
-        }
+        case model: SparkKernelDensity => throw new Exception("Cannot write SparkKernelDensity")
     }
     
-
+    def readModel(model: DBestModel) = model match {
+        case model: LinearRegressor => {
+            val fileName = makeFileName(model, x, y)
+            val pipemodel = PipelineModel.load(fileName)
+            model.setModel(pipemodel)
+            model
+        }
+        case model: SparkKernelDensity => throw new Exception("Cannot read SparkKernelDensity")
+    }
 }

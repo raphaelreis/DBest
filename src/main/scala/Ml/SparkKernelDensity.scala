@@ -7,27 +7,19 @@ import org.apache.spark.sql._
 import org.apache.spark.SparkContext
 
 
-class SparkKernelDensity(bandWidth: Double = 1.0) {
-    val kd = new KernelDensity
+class SparkKernelDensity(bandWidth: Double = 1.0) extends DBestModel {
     
-    // def fit(file: String, delimiter: String, y: String, x: String) {
-    //     val df: Dataset[Row]  = spark.read
-    //         .format("csv")
-    //         .option("header", "false")
-    //         .option("delimiter", delimiter)
-    //         .load(file)
+    private var kd = new KernelDensity
+    val name = "kd"
+    
+    def getKernelDensity() = kd
 
-    //     df.withColumn(x, df.col(x).cast("double"))
-
-    //     val sc = spark.sparkContext
-    //     val collection: Array[Double] = df.select(x).collect().toArray.map(row => row.asInstanceOf[Double])
-    // }
-
-    def fit(df: DataFrame, x: Array[String]): KernelDensity = {
-        kd.setSample(df.select(x.head, x.tail: _*).rdd.map((r: Row) => r.getDouble(0))).setBandwidth(bandWidth)
+    def fit(df: DataFrame, x: Array[String]): SparkKernelDensity = {
+        kd = kd.setSample(df.select(x.head, x.tail: _*).rdd.map((r: Row) => r.getDouble(0))).setBandwidth(bandWidth)
+        this
     }
 
-    def predict(point: Array[Double]) = {
-        throw ???
+    def predict(points: Array[Double]) = {
+        kd.estimate(points)
     }
 }
