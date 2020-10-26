@@ -16,10 +16,22 @@ object DBest {
     // val fileName = "data/sf10/store_sales.dat"
     val root = ""
     val fileName = "data/store_sales_sample.dat"
+    val table = root + fileName
+    val client: DBestClient = new DBestClient(table)
+    
+    val A = 80
+    val B = 190.0
 
-    var client: DBestClient = new DBestClient(root + fileName)
-    // client.simpleQuery1()
-    client.simpleQuery1WithModel()
+    //COUNT
+    client.simpleQuery1(A, B)
+    client.simpleQuery1WithModel(A, B)
 
+    // client.simpleQuery2()
+    // client.simpleQuery2WithModel()
+    
+    // client.simpleQuery3()
+    // client.simpleQuery3WithModel()
+
+    client.close()
   }
 }
