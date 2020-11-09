@@ -1,19 +1,9 @@
 package Ml
 
-import org.apache.spark.ml.regression.{LinearRegression, LinearRegressionModel}
-import org.apache.spark.sql._
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.ml.feature.VectorIndexerModel
-import org.apache.spark.ml.feature.VectorIndexer
-import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.types.DataTypes
-import org.apache.spark.sql.types.StructField
-import org.apache.spark.ml.feature.FeatureHasher
-import shapeless.Data
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.PipelineModel
+import org.apache.spark.ml.{Pipeline, PipelineModel}
+import org.apache.spark.ml.regression.{LinearRegression, LinearRegressionModel}
 
 class LinearRegressor extends DBestModel {
     
