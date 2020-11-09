@@ -27,6 +27,8 @@ libraryDependencies  ++= Seq(
   "org.scalanlp" %% "breeze-viz" % "1.1"
 )
 
+libraryDependencies += "com.github.haifengl" %% "smile-scala" % "2.5.3"
+
 
 fork in run := true
 javaOptions in run ++= Seq(
