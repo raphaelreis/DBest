@@ -3,6 +3,9 @@ package Ml
 import org.apache.spark.mllib.stat.KernelDensity
 import org.apache.spark.sql._
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.ml.regression.LinearRegression
+import scala.collection.mutable.Map
+import org.apache.spark.rdd.RDD
 
 class ModelWrapper(kernelBandeWidth: Double = 3.0) {
 
@@ -10,11 +13,11 @@ class ModelWrapper(kernelBandeWidth: Double = 3.0) {
     private var reg = new LinearRegressor()
     private var density = new SparkKernelDensity(kernelBandeWidth)
 
-    private def fitReg(df: DataFrame, x: Array[String], y: String) = {
+    def fitReg(df: DataFrame, x: Array[String], y: String) = {
         reg.fit(df, x, y)
     }
 
-    private def fitDensity(df: DataFrame, x: Array[String]) = {
+    def fitDensity(df: DataFrame, x: Array[String]) = {
         density.fit(df, x)
     }
 
@@ -37,26 +40,38 @@ class ModelWrapper(kernelBandeWidth: Double = 3.0) {
     }
 }
 
-class groupByModelWrapper(kernelBandeWidth: Double = 3.0) {
+class GroupByModelWrapper(kernelBandeWidth: Double = 3.0) {
     private val logger = Logger.getLogger(this.getClass().getName())
-    private var regModels = List[LinearRegressor]()
-    private var keys = Array[Any]() 
+    var regModels = Map[Any, LinearRegressor]()
+    var kdeModels = Map[Any, SparkKernelDensity]()
+    var keys = Array[Any]()
 
     private def computeKeys(df: DataFrame, groupCol: String) = {
-        df.select(groupCol).rdd.map(r => r.get(0)).collect().toArray
+        df.select(groupCol).rdd.map(r => r.get(0)).distinct.collect().toArray
     }
 
     // private def preprocessDf()
 
-    private def fitReg(df: DataFrame, groupCol: String, x: Array[String], y: String) = {
+    def fitRegs(df: DataFrame, groupCol: String) = {
         
         if (keys.isEmpty) {
             keys = computeKeys(df, groupCol)
         }
-
         for (key <- keys) {
-            val valuesForKey = df.filter(_.get(0) == key)
-            val values = valuesForKey.collect()
+            var groupDF = df.filter(r => r.getInt(0) == key)
+            if (!groupDF.isEmpty) {
+                val lr = new LinearRegressor()
+                lr.fit(groupDF)
+                regModels += key -> lr
+            }
+        }
+    }
+
+    def fitDensities(mapRDD: Map[String, RDD[Double]]) = {
+        for (col <- mapRDD.keys) {
+            val kde = new SparkKernelDensity
+            kde.fit(mapRDD(col))
+            kdeModels
         }
     }
 }
