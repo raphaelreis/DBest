@@ -19,6 +19,10 @@ class SparkKernelDensity(bandWidth: Double = 1.0) extends DBestModel {
         this
     }
 
+    def fit(rdd: RDD[Double]) = {
+        kd = kd.setSample(rdd).setBandwidth(bandWidth)
+    }
+
     def predict(points: Array[Double]) = {
         kd.estimate(points)
     }
