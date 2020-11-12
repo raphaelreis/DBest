@@ -12,8 +12,10 @@ class DataProcessor(dataFrame: DataFrame, features: Array[String], label: String
 
     private var df: DataFrame = dataFrame
     private val mapRDD = Map.empty[String, RDD[Double]]
-    private val mapRDDforGroupBy = Map.empty[String, RDD[(AnyVal, Double)]]
+    private val groupByMapRDD = Map.empty[String, RDD[(Any, Double)]]
     var assembled: Boolean = false
+    var densityProcessed: Boolean = false
+    var regressionProcessed: Boolean = false
 
     def assemble(): Unit = {
         assembled = true
@@ -31,6 +33,7 @@ class DataProcessor(dataFrame: DataFrame, features: Array[String], label: String
     def processForRegression(): DataProcessor = {
         assemble()
         df = df.withColumn("label", df.col(label))
+        regressionProcessed = true 
         this
     }
 
@@ -39,6 +42,7 @@ class DataProcessor(dataFrame: DataFrame, features: Array[String], label: String
         for (i <- 0 to features.length-1){
             mapRDD += features(i) -> selectedDF.rdd.map(r => r.getDouble(i))
         }
+        densityProcessed = true
         this
     }
 
@@ -48,20 +52,23 @@ class DataProcessor(dataFrame: DataFrame, features: Array[String], label: String
         val groupByType = selectedDF.select(groupColumn).schema.fields(0).dataType match {
             case DoubleType => {
                 for (i <- 1 to features.length-1){
-                    mapRDDforGroupBy += features(i) -> selectedDF.rdd.map(r => (r.getDouble(0), r.getDouble(i)))  
+                    groupByMapRDD += features(i) -> selectedDF.rdd.map(r => (r.getDouble(0), r.getDouble(i)))  
                 }
             }
             case IntegerType => {
                 for (i <- 1 to features.length-1){
-                    mapRDDforGroupBy += features(i) -> selectedDF.rdd.map(r => (r.getInt(0), r.getDouble(i)))  
+                    groupByMapRDD += features(i) -> selectedDF.rdd.map(r => (r.getInt(0), r.getDouble(i)))  
                 }
             }
             case _ => throw new Exception("Not supported group by column type (Only Int and Double)")
         }
+        densityProcessed = true
         this
     }
 
     def getPreprocessedDF(): DataFrame = df
-    def getMapRDD(): Map[String, RDD[Double]] = mapRDD
-
+    def getMapRDD() = if (!mapRDD.isEmpty) mapRDD 
+        else throw new Exception("mapRDD has not been processed")
+    def getGroupByMapRDD() = if (!groupByMapRDD.isEmpty) groupByMapRDD 
+        else throw new Exception("groupByMapRDD has not been processed")
 }
