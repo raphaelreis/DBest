@@ -17,23 +17,26 @@ class ModelWrapperTest extends FunSuite {
     import spark.implicits._
     val df = spark.sparkContext
         .parallelize(
-            Seq.fill(100){(randomIntTo100,randomDouble1to100,randomDouble1to100)}
+            Seq.fill(100){(randomIntTo100,randomDouble1to100, randomDouble1to100,randomDouble1to100)}
         )
-        .toDF("col1", "col2", "col3")
+        .toDF("col0", "col1", "col2", "col3")
 
     df.createOrReplaceTempView("df")
-    val groupByDf = spark.sql("select col1 % 10 as group_id, col2, col3 from df")  
+    val groupByDf = spark.sql("select col0 % 10 as groupId, col1, col2, col3 from df")  
 
-    test("GroupByModelWrapper test fitReg method") {
-        
-        val features = Array("col2")
+    test("GroupByModelWrapper test fit method") {
+        val groupColumn = "groupId"
+        val features = Array("col1", "col2")
         val label = "col3"
 
         val dp = new DataProcessor.DataProcessor(groupByDf, features, label)
         dp.processForRegression()
-        val processedDF = dp.getPreprocessedDF()
+        dp.processForGroupByDensity(groupColumn)
 
         val gmw: GroupByModelWrapper = new GroupByModelWrapper()
-        gmw.fitRegs(processedDF, "group_id")
+        gmw.fit(dp, groupColumn)
+        
+        assert(!gmw.getKdeModels().isEmpty)
+        assert(!gmw.getRegModels().isEmpty)
     }
 }
