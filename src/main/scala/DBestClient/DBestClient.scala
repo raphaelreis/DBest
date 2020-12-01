@@ -18,9 +18,7 @@ class DBestClient(table: String) {
         .master("local")
         .appName("DBest client")
         .getOrCreate()
-
     val dload = new DataLoader(spark)
-
 
     if (Files.exists(Paths.get(table))) {
         df = dload.loadTable(table)
@@ -54,14 +52,9 @@ class DBestClient(table: String) {
         val kde = d.fit(df, x)
         val lr = new LinearRegressor
         val lrm = lr.fit(df, x, y)
-        val qe = new QueryEngine(
-            spark,
-            kde,
-            lr,
-            df.count().toInt
-        )
+        val qe = new QueryEngine(spark, df.count().toInt)
 
-        val (count, elipseTime) = qe.approxCount(A, B, 0.01)
+        val (count, elipseTime) = qe.approxCount(kde, lrm, A, B, 0.01)
 
         println(s"Count value with model: $count")
         println(s"Time to compute count: $elipseTime")
@@ -83,13 +76,8 @@ class DBestClient(table: String) {
         val lr = new LinearRegressor
         val lrm = lr.fit(df, x, y)
 
-        val qe = new QueryEngine(
-            spark,
-            kde,
-            lrm,
-            df.count().toInt
-        )
-        val (avg, elipseTime) = qe.approxAvg(df, x, 5, 70, 0.01)
+        val qe = new QueryEngine(spark, df.count().toInt)
+        val (avg, elipseTime) = qe.approxAvg(df, kde, lrm, x, 5, 70, 0.01)
 
         println(s"AVG value with model: $avg")
         println(s"Time to compute count: $elipseTime")
@@ -111,13 +99,8 @@ class DBestClient(table: String) {
         val lr = new LinearRegressor
         val lrm = lr.fit(df, x, y)
 
-        val qe = new QueryEngine(
-            spark,
-            kde,
-            lrm,
-            df.count().toInt
-        )
-        val (sum, elipseTime) = qe.approxSum(df, x, 5, 70, 0.01)
+        val qe = new QueryEngine(spark, df.count().toInt)
+        val (sum, elipseTime) = qe.approxSum(df, kde, lrm, x, 5, 70, 0.01)
 
         println(s"SUM value with model: $sum")
         println(s"Time to compute count: $elipseTime")
