@@ -6,6 +6,7 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.ml.regression.LinearRegression
 import scala.collection.mutable.Map
 import org.apache.spark.rdd.RDD
+import Tools._
 
 class ModelWrapper(kernelBandeWidth: Double = 3.0) {
 
@@ -45,9 +46,6 @@ class GroupByModelWrapper(kernelBandeWidth: Double = 3.0) {
     private var groupValues = Array[Any]()
     private var regModels = Map[Any, LinearRegressor]()
     private var kdeModels = Map[String, Map[Any,SparkKernelDensity]]()
-    
-    private def computeGroupValues(df: DataFrame, groupCol: String) = 
-        df.select(groupCol).rdd.map(r => r.get(0)).distinct.collect().toArray
 
     def getRegModels() = {
         if (regModels.isEmpty) throw new Exception("Map of regression models is empty")
@@ -60,10 +58,7 @@ class GroupByModelWrapper(kernelBandeWidth: Double = 3.0) {
     }
 
     def fitRegs(df: DataFrame, groupColumn: String) = {
-        
-        if (groupValues.isEmpty) {
-            groupValues = computeGroupValues(df, groupColumn)
-        }
+        if (groupValues.isEmpty) {groupValues = computeColumnUniqueValues(df, groupColumn)}
         for (gVal <- groupValues) {
             var groupDF = df.filter(r => r.getInt(0) == gVal)
             if (!groupDF.isEmpty) {
@@ -75,7 +70,6 @@ class GroupByModelWrapper(kernelBandeWidth: Double = 3.0) {
     }
 
     def fitDensities(mapRDD: Map[String, RDD[(Any, Double)]]) = {
-
         if (groupValues.isEmpty) throw new Exception("groupValues is not computed")
         for (col <- mapRDD.keys) {
             val columnGroupMap = mapRDD(col)

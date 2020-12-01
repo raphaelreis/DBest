@@ -11,8 +11,8 @@ import org.apache.spark.sql.types.IntegerType
 class DataProcessor(dataFrame: DataFrame, features: Array[String], label: String) {
 
     private var df: DataFrame = dataFrame
-    private val mapRDD = Map.empty[String, RDD[Double]]
-    private val groupByMapRDD = Map.empty[String, RDD[(Any, Double)]]
+    private var mapRDD = Map.empty[String, RDD[Double]]
+    private var groupByMapRDD = Map.empty[String, RDD[(Any, Double)]]
     var assembled: Boolean = false
     var densityProcessed: Boolean = false
     var regressionProcessed: Boolean = false
@@ -51,13 +51,13 @@ class DataProcessor(dataFrame: DataFrame, features: Array[String], label: String
 
         val groupByType = selectedDF.select(groupColumn).schema.fields(0).dataType match {
             case DoubleType => {
-                for (i <- 1 to features.length-1){
-                    groupByMapRDD += features(i) -> selectedDF.rdd.map(r => (r.getDouble(0), r.getDouble(i)))  
+                for (i <- 1 to features.length){
+                    groupByMapRDD += features(i-1) -> selectedDF.rdd.map(r => (r.getDouble(0), r.getDouble(i)))  
                 }
             }
             case IntegerType => {
-                for (i <- 1 to features.length-1){
-                    groupByMapRDD += features(i) -> selectedDF.rdd.map(r => (r.getInt(0), r.getDouble(i)))  
+                for (i <- 1 to features.length){
+                    groupByMapRDD += features(i-1) -> selectedDF.rdd.map(r => (r.getInt(0), r.getDouble(i)))  
                 }
             }
             case _ => throw new Exception("Not supported group by column type (Only Int and Double)")
@@ -67,8 +67,8 @@ class DataProcessor(dataFrame: DataFrame, features: Array[String], label: String
     }
 
     def getPreprocessedDF(): DataFrame = df
-    def getMapRDD() = if (!mapRDD.isEmpty) mapRDD 
+    def getMapRDD() = if (densityProcessed) mapRDD 
         else throw new Exception("mapRDD has not been processed")
-    def getGroupByMapRDD() = if (!groupByMapRDD.isEmpty) groupByMapRDD 
+    def getGroupByMapRDD() = if (densityProcessed) groupByMapRDD 
         else throw new Exception("groupByMapRDD has not been processed")
 }

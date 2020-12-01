@@ -29,6 +29,7 @@ class ModelWrapperTest extends FunSuite {
         val features = Array("col1", "col2")
         val label = "col3"
 
+        
         val dp = new DataProcessor.DataProcessor(groupByDf, features, label)
         dp.processForRegression()
         dp.processForGroupByDensity(groupColumn)
@@ -36,6 +37,7 @@ class ModelWrapperTest extends FunSuite {
         val gmw: GroupByModelWrapper = new GroupByModelWrapper()
         gmw.fit(dp, groupColumn)
         
+        logger.info(gmw.getKdeModels())
         assert(!gmw.getKdeModels().isEmpty)
         assert(!gmw.getRegModels().isEmpty)
     }
