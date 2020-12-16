@@ -17,20 +17,20 @@ object SimpleQueries {
     val root = ""
     val fileName = "data/store_sales_sample.dat"
     val table = root + fileName
-    val client: DBestClient = new DBestClient(table)
+    val client: DBestClient = new DBestClient
     
     val A = 80
     val B = 190.0
     
     //COUNT
-    // client.simpleQuery1(A, B)
-    // client.simpleQuery1WithModel(A, B)
+    client.simpleQuery1(A, B)
+    client.simpleQuery1WithModel(A, B)
 
-    // client.simpleQuery2()
-    // client.simpleQuery2WithModel()
+    client.simpleQuery2()
+    client.simpleQuery2WithModel()
     
-    // client.simpleQuery3()
-    // client.simpleQuery3WithModel()
+    client.simpleQuery3()
+    client.simpleQuery3WithModel()
 
     client.close()
   }

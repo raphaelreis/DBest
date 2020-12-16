@@ -19,9 +19,6 @@ object DatGen {
 
 
     val spark: SparkSession = SparkSession.builder
-        .master("local[*]")
-        .config("spark.executor.cores", "8")
-        .config("spark.executor.memory", "2g")
         .appName("DataGen")
         .getOrCreate()
     
@@ -44,10 +41,13 @@ object DatGen {
       * Generate random table and save it
       */
     logger.info(spark.sparkContext.getConf.getAll.mkString("\n"))
-    val df = generate1ColTable(spark, tableSize)
-    df.show()
-    
+    logger.info("Start data generation")
+    val df = generate1ColTable(spark, tableSize).cache()
+    logger.info("End data generation")
+    // df.show()
+    logger.info("Start writing parquet files")
     df.write.parquet(path)
+    logger.info("End writing parquet files")
     spark.close()
     }
 }
