@@ -25,7 +25,8 @@ class QueryEngine(spark: SparkSession, numberTrainingPoint: Int) {
       * def approxCount(xMin: Array[Double], xMax: Array[Double], precision: Double): (Double, Double) = {
       */
 
-    def approxCount(skd: SparkKernelDensity, lr: LinearRegressor, xMin: Double, xMax: Double, precision: Double): (Double, Double) = {
+    def approxCount(skd: SparkKernelDensity, xMin: Double, xMax: Double,
+                     precision: Double) = {
         val t0 = System.nanoTime()
 
         var kde = skd.getKernelDensity()
