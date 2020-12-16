@@ -2,19 +2,20 @@ package DataLoader
 
 import org.apache.spark.sql._
 
-class DataLoader(spark: SparkSession) {
-    def loadTable(table: String): DataFrame = {
-        val df = spark.read.format("csv")
-            .option("header", false)
-            .option("delimiter", "|")
-            .option("inferSchema", "true")
-            .option("mode", "DROPMALFORMED")
-            .load(table).drop("_c23")
+class DataLoader {
+    def loadTable(spark: SparkSession, path: String, tableName: String, 
+                    format: String = "csv", header: Boolean = false, 
+                    delimiter: String = "|", inferSchema: Boolean = true, 
+                    mode: String = "DROPMALFORMED") = {
+
+        val df = spark.read.format(format)
+            .option("header", header)
+            .option("delimiter", delimiter)
+            .option("inferSchema", inferSchema)
+            .option("mode", mode)
+            .load(path)
             .na.drop().cache()
-        df.createOrReplaceTempView("store_sales")
+        df.createOrReplaceTempView(tableName)
         df
-    }
-    def load() = {
-        throw ???
     }
 }

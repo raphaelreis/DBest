@@ -2,32 +2,53 @@ package DBestClient
 
 import org.apache.spark.sql.SparkSession
 import java.nio.file.{Paths, Files}
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.mllib.stat.KernelDensity
 import Ml._
 import QueryEngine._
 import DataLoader._
 import org.apache.spark.ml.regression.LinearRegressionModel
+import DataGenerator.DataGenerator._
+import javassist.NotFoundException
+import java.io.FileNotFoundException
 
 
-class DBestClient(table: String) {
-
+class DBestClient {
+    val logger = Logger.getLogger(this.getClass().getName())
     var df: DataFrame = _
 
     val spark: SparkSession = SparkSession.builder
         .master("local")
         .appName("DBest client")
         .getOrCreate()
-    val dload = new DataLoader(spark)
-
-    if (Files.exists(Paths.get(table))) {
-        df = dload.loadTable(table)
-    } else {
-        throw new Exception("Table does not exist.")
-    }
 
     def close() = {
         spark.stop()
+    }
+
+    def loadHDFSTable(path: String, tableName: String) = {
+
+        val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+        val fileExists = fs.exists(new Path(path))
+        if (fileExists) {
+            df = spark.read.parquet(path)
+            df.createOrReplaceTempView(tableName)
+        }
+        else {
+            throw new FileNotFoundException("Table not found on HDFS")
+        }
+    }
+
+    def loadTable(path: String, tableName: String) = {
+        val dload = new DataLoader
+
+        if (Files.exists(Paths.get(path))) {
+            df = dload.loadTable(spark, path, tableName)
+        } else {
+            throw new FileNotFoundException("Table does not exist on the given path")
+        }
     }
 
     def simpleQuery1(A: Double, B: Double) {
