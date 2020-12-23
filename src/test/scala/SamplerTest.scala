@@ -1,8 +1,9 @@
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
+import Sampler.Sampler._
 
-class SamplerTest extends FunSuite {
+class SamplerTest extends AnyFunSuite {
     val logger = Logger.getLogger(this.getClass().getName())
 
     val spark: SparkSession = SparkSession.builder
@@ -20,8 +21,8 @@ class SamplerTest extends FunSuite {
 
     test("Sampler.uniformSampling") {
         val fraction = 0.2
-        val sampler = new Sampler.Sampler(df)
-        val sampled_df = sampler.uniformSampling(fraction)
+        // val sampler = new Sampler.Sampler(df)
+        val sampled_df = uniformSampling(df, fraction)
         logger.info("df count: " + df.count())
         logger.info("sampled_count: " + sampled_df.count())
 

@@ -1,4 +1,4 @@
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql._
 import org.apache.log4j.{Level, Logger}
 import DBestClient._
@@ -9,7 +9,7 @@ import java.io.File
 import org.apache.spark.ml.regression.LinearRegressionModel
 
 
-class ModelIOTest extends FunSuite {
+class ModelIOTest extends AnyFunSuite {
     val logger = Logger.getLogger(this.getClass().getName())
 
     val spark: SparkSession = SparkSession
@@ -18,7 +18,7 @@ class ModelIOTest extends FunSuite {
         .appName("ModelIO test")
         .getOrCreate()
 
-    val dload = new DataLoader(spark)
+    val dload = new DataLoader
 
     val root = ""
     val fileName = "data/store_sales_sample.dat"
@@ -26,7 +26,7 @@ class ModelIOTest extends FunSuite {
     var df: DataFrame = _
 
     if (Files.exists(Paths.get(table))) {
-        df = dload.loadTable(table)
+        // df = dload.loadTable(table)
     } else {
         throw new Exception("Table does not exist.")
     }

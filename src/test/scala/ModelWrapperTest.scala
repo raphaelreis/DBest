@@ -1,9 +1,11 @@
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
 import Ml.GroupByModelWrapper
+import Ml.ModelWrapper
+import org.apache.spark.sql.functions.{rand, randn}
 
-class ModelWrapperTest extends FunSuite {
+class ModelWrapperTest extends AnyFunSuite {
     val logger = Logger.getLogger(this.getClass().getName())
 
     val spark: SparkSession = SparkSession.builder
@@ -24,7 +26,16 @@ class ModelWrapperTest extends FunSuite {
     df.createOrReplaceTempView("df")
     val groupByDf = spark.sql("select col0 % 10 as groupId, col1, col2, col3 from df")  
 
-    test("GroupByModelWrapper test fit method") {
+    test("ModelWrapper test save method") {
+        val idx = spark.sqlContext.range(0, 100)
+        val randomDf = idx.select("id").withColumn("uniform", rand(42))
+
+        val features = Array("uniform")
+        val mw = new ModelWrapper()
+        mw.saveDensities(randomDf, features)
+    }
+
+    ignore("GroupByModelWrapper test fit method") {
         val groupColumn = "groupId"
         val features = Array("col1", "col2")
         val label = "col3"

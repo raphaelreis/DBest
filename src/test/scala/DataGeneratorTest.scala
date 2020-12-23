@@ -1,9 +1,9 @@
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
 import DataGenerator.DataGenerator._
 
-class DataGeneratorTest extends FunSuite {
+class DataGeneratorTest extends AnyFunSuite {
     val logger = Logger.getLogger(this.getClass().getName())
 
     val spark: SparkSession = SparkSession.builder
@@ -14,10 +14,5 @@ class DataGeneratorTest extends FunSuite {
     test("TableGenerator.generateTable ") {
         val df = generate1ColTable(spark, 10)
         df.show()
-    }
-
-    test("TableGenerator.save ") {
-        val df = generate1ColTable(spark, 10)
-        save(df, "/Users/Raphael/CS/github.com/DBest/data/df.parquet")
     }
 }
