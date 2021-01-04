@@ -5,9 +5,10 @@ import scala.math.exp
 import org.apache.spark.mllib.stat.KernelDensity
 import breeze.linalg._
 import breeze.integrate._
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.Stack
 import org.apache.spark.ml.regression.LinearRegressionModel
 import org.apache.spark.sql._
+import org.apache.spark.sql.{functions => F} 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.ml.feature.VectorAssembler
 import Ml.SparkKernelDensity
@@ -15,6 +16,7 @@ import Ml.LinearRegressor
 import Ml.GroupByModelWrapper
 import org.apache.spark.rdd.RDD
 import org.apache.log4j.{Level, Logger}
+import Ml.ModelWrapper
 
 
 class QueryEngine(spark: SparkSession, numberTrainingPoint: Int) {
@@ -32,7 +34,7 @@ class QueryEngine(spark: SparkSession, numberTrainingPoint: Int) {
         var kde = skd.getKernelDensity()
         val ls = linspace(xMin, xMax).toArray  
         val kdeEstimates = kde.estimate(ls)
-
+        
         def fD(x: Double): Double = {
             kdeEstimates.head   
         }
@@ -86,6 +88,37 @@ class QueryEngine(spark: SparkSession, numberTrainingPoint: Int) {
         (dR / d, t1-t0)
     }
 
+    def approxCount(df: DataFrame, mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double, precision: Double) = {
+        val t0 = System.nanoTime()
+
+        val densities = mw.getDensities()
+        var count = 0.0
+        for ((col, density) <- densities) {
+            val minMax = df.agg(F.min(col), F.max(col)).head.toSeq
+            val (minimum: Double, maximum: Double) = (minMax(0), minMax(1))
+            val ls = linspace(minimum, maximum, density.length).toArray
+            val points = (ls zip density)
+                            .filter {case (x: Double, va: Double) => x >= xMin && x <= xMax}
+                            .map(_._2)
+            val h = (xMax - xMin) / (points.length - 1)
+            val pointsMap = (for ((i, v) <- (0 until points.length) zip points.reverse) yield xMin + i * h -> v) toMap
+            def fD(x: Double) = pointsMap(x)
+            count = trapezoid(fD, xMin, xMax, points.length) * numberTrainingPoint
+        }
+
+        val t1 = System.nanoTime()
+        (count, t1-t0)
+    }
+
+    def approxSum(df: DataFrame, mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double, precision: Double): (Double, Long) = {
+        val t0 = System.nanoTime()
+
+        val kde = mw.getKdeModel().getKernelDensity()
+        val reg = mw.getRegModel()
+
+        (0.0, 0L)
+    }
+
     def approxSum(df: DataFrame, skd: SparkKernelDensity, lr: LinearRegressor, x: Array[String], xMin: Double, xMax: Double, precision: Double): (Double, Double) = {
         val t0 = System.nanoTime()
 
@@ -117,6 +150,8 @@ class QueryEngine(spark: SparkSession, numberTrainingPoint: Int) {
         val t1 = System.nanoTime()
         (sum, t1-t0)
     }
+
+    
 
     def groupByApproxCount(gmw: GroupByModelWrapper, groupValues: Array[(Any, Int)], groupColumn: String, 
         features: Array[String], xMin: Double, xMax: Double, precision: Double) = {

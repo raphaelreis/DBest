@@ -7,36 +7,93 @@ import org.apache.spark.ml.regression.LinearRegression
 import scala.collection.mutable.Map
 import org.apache.spark.rdd.RDD
 import Tools._
+import Tools.fileWriter.writeFile
+import Tools.makeDensityFileName.makeDensityFileName
+import breeze.linalg._
+import java.nio.file.{Paths, Files}
+import scala.io._
+import Sampler.Sampler._
+import settings.Settings
 
-class ModelWrapper(kernelBandeWidth: Double = 3.0) {
+class ModelWrapper(settings: Settings, kernelBandeWidth: Double = 3.0) {
 
     private val logger = Logger.getLogger(this.getClass().getName())
     private var reg = new LinearRegressor()
-    private var density = new SparkKernelDensity(kernelBandeWidth)
+    private var kde = new SparkKernelDensity(kernelBandeWidth)
+    private var densities = Map[String, Array[Double]]()
 
+    def getRegModel() = reg
+    def getKdeModel() = kde
+    def getDensities() = densities
+
+    def fitReg(df: DataFrame) = {
+        reg.fit(df)
+    }
     def fitReg(df: DataFrame, x: Array[String], y: String) = {
         reg.fit(df, x, y)
     }
 
     def fitDensity(df: DataFrame, x: Array[String]) = {
-        density.fit(df, x)
+        kde.fit(df, x)
     }
 
-    def fitOrLoad(df: DataFrame, x: Array[String], y: String) = {
+    def saveDensities(df: DataFrame, x: Array[String], trainingFrac: Double) = {
+        for (col <- x) {
+            val density = new SparkKernelDensity(kernelBandeWidth)
+            val colRDD = df.select(col).rdd.map((r: Row) => r.getDouble(0)).cache()
+            density.fit(colRDD)
+            val (min, max) = (colRDD.min(), colRDD.max())
+            val linsp = linspace(min, max).toArray
+            val estimates = density.predict(linsp)
+            val fileName = makeDensityFileName(settings.dpath, df, col, trainingFrac)
+            writeFile(fileName, estimates)
+        }
+    }
+
+    def loadDensities(df: DataFrame, x: Array[String], trainingFrac: Double) = {
+        for (col <- x) {
+            val fileName = makeDensityFileName(settings.dpath, df, col, trainingFrac)
+            if (Files.exists(Paths.get(fileName))) {
+                val fileSource = Source.fromFile(fileName)  
+                for(line <- fileSource.getLines){  
+                    densities += col -> line.split(" ").map(_.toDouble)
+                }   
+                fileSource.close() 
+            }
+            logger.info("Model used: " + fileName)
+        }
+    }
+
+    def fitOrLoad(aggFun: String, df: DataFrame, x: Array[String], y: String, trainingFrac: Double) {
         
-        //fit kernel density
-        density = fitDensity(df, x)
+        var trainingDF = df
+        // Get training fraction
+        if (trainingFrac != 1.0) trainingDF = uniformSampling(df, trainingFrac)
         
-        val mio = new ModelIO(x, y)
-    
-        //load or fit regression 
-        if (mio.exists(reg)) {
-            logger.info("regression model exists and is loaded")
-            reg = mio.readModel(reg).asInstanceOf[LinearRegressor]
-        } else {
-            logger.info("regression does not exists and will be fit")
-            fitReg(df, x, y)
-            mio.writeModel(reg)
+        // Save densities if not registered
+        var unknownColumns = Array[String]()
+        for (col <- x) {
+            val path = makeDensityFileName(settings.dpath, df, col, trainingFrac)
+            if (!Files.exists(Paths.get(path))) 
+                unknownColumns = unknownColumns :+ col
+        }
+        saveDensities(trainingDF, unknownColumns, trainingFrac)
+
+        // Load all saved densities
+        loadDensities(df, x, trainingFrac)
+        
+        // Fit or load regression
+        if (aggFun != "count") {
+            val mio = new ModelIO(settings.rpath, x, y)
+            //load or fit regression 
+            if (mio.exists(reg)) {
+                logger.info("regression model exists and is loaded")
+                reg = mio.readModel(reg).asInstanceOf[LinearRegressor]
+            } else {
+                logger.info("regression does not exists and will be fit")
+                fitReg(df)
+                mio.writeModel(reg)
+            }
         }
     }
 }

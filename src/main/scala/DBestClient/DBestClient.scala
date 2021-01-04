@@ -14,7 +14,7 @@ import DataGenerator.DataGenerator._
 import javassist.NotFoundException
 import java.io.FileNotFoundException
 import Sampler.Sampler._
-
+import settings.Settings
 
 class DBestClient {
     val logger = Logger.getLogger(this.getClass().getName())
@@ -35,7 +35,7 @@ class DBestClient {
         val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
         val fileExists = fs.exists(new Path(path))
         if (fileExists) {
-            df = spark.read.parquet(path)
+            df = spark.read.parquet(path).cache()
             df.createOrReplaceTempView(tableName)
             dfSize = df.count().toInt
         }
@@ -61,28 +61,38 @@ class DBestClient {
         res
     }
 
-    def queryWithModel(aggFun: String, features: Array[String], A: Double,
-                        B: Double, trainingFrac: Double = 1.0) = aggFun match {
+    def queryWithModel(settings: Settings, aggFun: String, features: Array[String], label: String, a: Double,
+                        b: Double, trainingFrac: Double = 1.0) = aggFun match {
         case "count" => {
             val x = features
-            var trainingDF = df
-
-            // Get training fraction
-            if (trainingFrac != 1.0) trainingDF = uniformSampling(df, trainingFrac)
-
-            // Model fitting
-            val d = new SparkKernelDensity(3.0)
-            val kde = d.fit(trainingDF, x)
+            logger.info("x: " + x.mkString)
+            //Model fitting
+            val mw = new ModelWrapper(settings)
+            mw.fitOrLoad("count", df, x, label, trainingFrac)
 
             // Aggregation evaluation
             val qe = new QueryEngine(spark, dfSize)
-            val (count, elipseTime) = qe.approxCount(kde, A, B, 0.01)
+            // val (count, elipseTime) = qe.approxCount(kde, a, b, 0.01)
+            val (count, elipseTime) = qe.approxCount(df, mw, x, label, a, b, 0.01)
             (count, elipseTime)
         }
+        case "sum" => {
+            val x = features
+            val y = label
+
+            // Model fitting
+            val mw = new ModelWrapper(settings)
+            mw.fitOrLoad("sum", df, x, y, trainingFrac)
+
+            //Aggregation evaluation
+            val qe = new QueryEngine(spark, dfSize)
+            // val (count, elipseTime) = qe.approxSumNew(trainingDF, mw, x, y, a, b, 0.01)
+            (0.0, 0L)
+        }
         case "avg" => throw new NotImplementedError
-        case "sum" => throw new NotImplementedError
         case _ => throw new NotImplementedError("Please choose between count, sum and avg aggregation function")
     }
+    
 
     def simpleQuery1(A: Double, B: Double) {
         /** Run simple count query with filtering */

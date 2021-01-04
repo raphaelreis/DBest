@@ -5,21 +5,42 @@ import DBestClient.DBestClient
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import org.apache.log4j.{Level, Logger}
+import com.typesafe.config._
+import settings.Settings
+
 
 
 object CountExperiment {
   def main(args: Array[String]) = {
     val logger = Logger.getLogger(this.getClass().getName())
+    val confFileName = "conf/application.conf"
+    val conf = ConfigFactory.parseFile(new File(confFileName)).resolve()
+    val settings = new Settings(conf)
 
-    val resultsFolder = "results/"
-    val path = "data/df1m.parquet"
-    val tableName = "dataframe1m"
+    val distribution = "uniform"
+    var path = ""
+    var tableName = ""
+    
+    
     val client: DBestClient = new DBestClient
-    client.loadHDFSTable(path, tableName)
 
-    var (a, b) = (0.0, 100.0)
+    if (settings.hdfsAvailable) {
+      path = s"data2/df10m_$distribution.parquet"
+      tableName = s"dataframe10m_$distribution"
+      client.loadHDFSTable(path, tableName)
+    }
+    else {
+      path = "data/df.parquet"
+      tableName = "df"
+      client.loadTable(path, tableName)
+    }
+
+    logger.info(s"Table: $path")
+    var (a, b) = (45.0, 65.0)
+    val maxDataSample = 0.125
     val agg = "count"
-    val features = Array("col1")
+    val features = Array(distribution)
+    val label = "label"
 
     // Exact counter
     val q1 = s"SELECT ${agg.toUpperCase()}(*) FROM $tableName WHERE ${features(0)} BETWEEN $a AND $b"
@@ -30,29 +51,47 @@ object CountExperiment {
     val t1 = System.nanoTime()
     val elapsedTimeExact = (t1-t0).toLong * 1E-9
 
-    // AQP: Model trained with full data
-    val (countFull, elapsedTimeFull) = client.queryWithModel(agg, features, a, b)
-    
-    // AQL: Model trained with half of the data
-    val (countHalf, elapsedTimeHalf) = client.queryWithModel(agg, features, a, b, 0.5)
-    
-    // AQL: Model trained with quarter of the data
-    val (countQuart, elapsedTimeQuart) = client.queryWithModel(agg, features, a, b, 0.25)
+    // AQL: Model trained with a eighth of the data
+    logger.info("Experiment1 !")
+    val (count1, elapsedTime1) = client.queryWithModel(settings, agg, features, label, a, b, maxDataSample)
 
+    // AQL: Model trained with a sixteenth of the data
+    logger.info("Experiment2 !")
+    val (count2, elapsedTime2) = client.queryWithModel(settings, agg, features, label, a, b, maxDataSample / 2)
+
+    // AQL: Model trained with ...
+    logger.info("Experiment3 !")
+    val (count3, elapsedTime3) = client.queryWithModel(settings, agg, features, label, a, b, maxDataSample / 4)
+
+    // AQL: Model trained with ...
+    logger.info("Experiment4 !")
+    val (count4, elapsedTime4) = client.queryWithModel(settings, agg, features, label, a, b, maxDataSample / 8)
+
+    // AQL: Model trained with ...
+    logger.info("Experiment5 !")
+    val (count5, elapsedTime5) = client.queryWithModel(settings, agg, features, label, a, b, maxDataSample / 16)
+
+    // AQL: Model trained with ...
+    logger.info("Experiment6 !")
+    val (count6, elapsedTime6) = client.queryWithModel(settings, agg, features, label, a, b, maxDataSample / 32)
   
     // Format and write data
-    val aggMode = List("exact", "model 100%", "model 50%", "model 25%")
-    val cv = List(exactCount, countFull, countHalf, countQuart)
-    val timing = List(elapsedTimeExact, elapsedTimeFull * 1E-9, elapsedTimeHalf * 1E-9, elapsedTimeQuart * 1E-9)
-
+    val aggMode = List("exact", s"model $maxDataSample%", s"model ${maxDataSample/2}%",
+        s"model ${maxDataSample/4}%", s"model ${maxDataSample/8}%",
+        s"model ${maxDataSample/16}%", s"model ${maxDataSample/32}%")
+    val cv = List(exactCount, count1, count2, count3, count4, count5, count6)
+    val timing = List(elapsedTimeExact, elapsedTime1 * 1E-9, elapsedTime2 * 1E-9,
+      elapsedTime3 * 1E-9, elapsedTime4 * 1E-9, elapsedTime5 * 1E-9, elapsedTime6 * 1E-9)
+    def relativeErrorFun = (realError: Double, approxError: Double) => (approxError - realError) / realError * 100.0
+    val relativeError = 0.0 +: cv.tail.map(relativeErrorFun(exactCount, _))
 
     val timestamp = LocalDateTime.now.format(DateTimeFormatter.ofPattern("YYYYMMdd_HHmmss"))
-    val outputFile = resultsFolder + s"$tableName" + "_" + s"${a.toInt}" + "_"+ s"${b.toInt}" + "_" + s"$agg" + "_" + timestamp + ".csv"
+    val outputFile = settings.resultsFolder + s"$tableName" + "_" + s"${a.toInt}" + "_"+ s"${b.toInt}" + "_" + s"$agg" + "_" + timestamp + ".csv"
     val writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile)))
-    val header = "Agg mode,Count value,Time\n"
+    val header = "Agg mode,Count value,Time, RelError(%)\n"
     writer.write(header)
-    for ((c1, c2, c3) <- (aggMode, cv, timing).zipped) {
-      val line: String = c1.toString + f",$c2%.2f,$c3%3.2f\n"
+    for ((((c1, c2), c3), c4) <- aggMode zip cv zip timing zip relativeError) {
+      val line: String = c1.toString + f",$c2%.2f,$c3%3.2f,$c4%.2f\n"
       writer.write(line)
     }
     writer.close()

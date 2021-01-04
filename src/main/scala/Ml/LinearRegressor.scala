@@ -14,6 +14,10 @@ class LinearRegressor extends DBestModel {
 
     def getLinearRegressionModel() = model.stages(1).asInstanceOf[LinearRegressionModel]
     def getLinearRegressionModel(i: Int) = model.stages(i).asInstanceOf[LinearRegressionModel]
+
+    def transform(df: DataFrame) = {
+        model.transform(df)
+    }
     
     def fit(df: DataFrame, x: Array[String], y: String): LinearRegressor = {
 

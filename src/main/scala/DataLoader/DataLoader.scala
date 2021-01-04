@@ -4,7 +4,7 @@ import org.apache.spark.sql._
 
 class DataLoader {
     def loadTable(spark: SparkSession, path: String, tableName: String, 
-                    format: String = "csv", header: Boolean = false, 
+                    format: String = "parquet", header: Boolean = false, 
                     delimiter: String = "|", inferSchema: Boolean = true, 
                     mode: String = "DROPMALFORMED") = {
 
