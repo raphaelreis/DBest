@@ -9,9 +9,8 @@ import com.typesafe.config._
 import settings.Settings
 
 
-
-object CountExperiment {
-  def main(args: Array[String]) = {
+object SumExperiment {
+  def main(args: Array[String]) {
 
     // Init
     val logger = Logger.getLogger(this.getClass().getName())
@@ -23,20 +22,20 @@ object CountExperiment {
     val distribution = "uniform"
     var (a, b) = (45.0, 65.0)
     val maxDataSample = 0.125
-    val agg = "count"
-    
-    
-    
+    val agg = "sum"
+
+
+    val ta = System.nanoTime()
     val client: DBestClient = new DBestClient
     var path = ""
     var tableName = ""
     if (settings.hdfsAvailable) {
-      path = s"data2/df10m_$distribution.parquet"
-      tableName = s"dataframe10m_$distribution"
+      path = s"data/${agg}_df_${distribution}_label_10m.parquet"
+      tableName = s"${agg}_df_${distribution}_label_10m"
       client.loadHDFSTable(path, tableName)
     } else {
-      path = "data/df.parquet"
-      tableName = "df"
+      path = "data/df_sum_uniform_label.parquet"
+      tableName = "df_sum_uniform_label"
       client.loadTable(path, tableName)
     }
     logger.info(s"Table: $path")
@@ -44,10 +43,11 @@ object CountExperiment {
     val label = "label"
 
     // Exact counter
-    val q1 = s"SELECT ${agg.toUpperCase()}(*) FROM $tableName WHERE ${features(0)} BETWEEN $a AND $b"
+    val q1 = s"SELECT ${agg.toUpperCase()}($label) FROM $tableName WHERE ${features(0)} BETWEEN $a AND $b"
+    logger.info(q1)
     val res = client.query(q1)
     val t0 = System.nanoTime()
-    val exactCount = res.take(1)(0)(0).asInstanceOf[Long].toDouble
+    val exactCount = res.take(1)(0)(0).asInstanceOf[Double]
     logger.info(s"exactCount: $exactCount")
     val t1 = System.nanoTime()
     val elapsedTimeExact = (t1-t0).toLong * 1E-9
@@ -75,8 +75,17 @@ object CountExperiment {
     // AQL: Model trained with ...
     logger.info("Experiment6 !")
     val (count6, elapsedTime6) = client.queryWithModel(settings, agg, features, label, a, b, maxDataSample / 32)
-  
+    
+    val tb = System.nanoTime()
     // Format and write data
+    val time = LocalDateTime.now.format(DateTimeFormatter.ofPattern("dd.MM.YYYY / HH:mm"))
+    val title = s"""
+    Report for experiment ($time):
+      - table: $tableName
+      - aggregation: $agg
+      - selectivity: (min: $a), (max: $b)\n\n\n
+      - experimentation time: ${tb-ta}
+    """
     val aggMode = List("exact", s"model $maxDataSample%", s"model ${maxDataSample/2}%",
         s"model ${maxDataSample/4}%", s"model ${maxDataSample/8}%",
         s"model ${maxDataSample/16}%", s"model ${maxDataSample/32}%")
@@ -90,6 +99,7 @@ object CountExperiment {
     val outputFile = settings.resultsFolder + s"$tableName" + "_" + s"${a.toInt}" + "_"+ s"${b.toInt}" + "_" + s"$agg" + "_" + timestamp + ".csv"
     val writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile)))
     val header = "Agg mode,Count value,Time, RelError(%)\n"
+    writer.write(title)
     writer.write(header)
     for ((((c1, c2), c3), c4) <- aggMode zip cv zip timing zip relativeError) {
       val line: String = c1.toString + f",$c2%.2f,$c3%3.2f,$c4%.2f\n"
@@ -97,5 +107,6 @@ object CountExperiment {
     }
     writer.close()
     client.close()
+ 
   }
 }

@@ -5,16 +5,18 @@ import scala.util.Try
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
 import java.io._
+import math.round
 
-object makeFileName extends ((String, DBestModel, Array[String], String) => String) {
-    def apply(dir: String, model: DBestModel, x: Array[String], y: String): String = {
-        dir + model.name + "/" + x.mkString("_") + y
+object makeFileName {
+    def makeFileName(dir: String, df: DataFrame,  model: DBestModel, x: Array[String], y: String, trainingFrac: Double): String = {
+        dir + model.name + "_" + df.columns.mkString + x.mkString("_") + y + "_" + trainingFrac.toString()
     }
 }
 
 object makeDensityFileName {
-    def makeDensityFileName(dir: String, df: DataFrame, column: String, trainingFrac: Double) = {
-        dir + df.columns.mkString("_") + "_" + column + "_" + trainingFrac.toString() + ".txt"
+    def makeDensityFileName(dir: String, df: DataFrame, column: String, evalSpacing: Double, trainingFrac: Double) = {
+        val roundSpace = math.round(evalSpacing * 100).toDouble / 100
+        dir + df.columns.mkString("_") + "_" + column + "_spacing" + roundSpace.toString + "_TF" + trainingFrac.toString() + ".txt"
     }
 }
 

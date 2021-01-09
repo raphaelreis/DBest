@@ -9,7 +9,7 @@ import org.apache.log4j.{Level, Logger}
 
 class LinearRegressor extends DBestModel {
     private val logger = Logger.getLogger(this.getClass().getName())
-    val name = "linreg"
+    val name = "linear_regression"
     var model: PipelineModel = _
 
     def getLinearRegressionModel() = model.stages(1).asInstanceOf[LinearRegressionModel]

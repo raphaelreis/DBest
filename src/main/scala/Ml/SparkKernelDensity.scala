@@ -9,7 +9,7 @@ import org.apache.spark.SparkContext
 
 class SparkKernelDensity(bandWidth: Double = 1.0) extends DBestModel {
     private var kd = new KernelDensity
-    val name = "kd"
+    val name = "kernel_density"
     
     def getKernelDensity() = kd
 

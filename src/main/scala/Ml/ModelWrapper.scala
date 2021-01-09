@@ -14,8 +14,9 @@ import java.nio.file.{Paths, Files}
 import scala.io._
 import Sampler.Sampler._
 import settings.Settings
+import traits.Analyser
 
-class ModelWrapper(settings: Settings, kernelBandeWidth: Double = 3.0) {
+class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String, Double], var dfMaxs: Map[String, Double], kernelBandeWidth: Double = 3.0) extends Analyser {
 
     private val logger = Logger.getLogger(this.getClass().getName())
     private var reg = new LinearRegressor()
@@ -37,22 +38,25 @@ class ModelWrapper(settings: Settings, kernelBandeWidth: Double = 3.0) {
         kde.fit(df, x)
     }
 
-    def saveDensities(df: DataFrame, x: Array[String], trainingFrac: Double) = {
-        for (col <- x) {
+    def saveDensities(df: DataFrame, x: Array[String], evalSpacing: Double, trainingFrac: Double) = {
+        if (!x.isEmpty) {
+            val col = x(0)
             val density = new SparkKernelDensity(kernelBandeWidth)
-            val colRDD = df.select(col).rdd.map((r: Row) => r.getDouble(0)).cache()
+            val colRDD = df.select(col).rdd.map(_.getDouble(0)).cache()
             density.fit(colRDD)
-            val (min, max) = (colRDD.min(), colRDD.max())
-            val linsp = linspace(min, max).toArray
+            val (minimum, maximum) = (dfMins(col), dfMaxs(col))
+            val precision = ((maximum - minimum) / evalSpacing).toInt
+            val linsp = linspace(minimum, maximum, precision).toArray
             val estimates = density.predict(linsp)
-            val fileName = makeDensityFileName(settings.dpath, df, col, trainingFrac)
+            val fileName = makeDensityFileName(settings.dpath, df.drop("features", "label"), col, evalSpacing, trainingFrac)
             writeFile(fileName, estimates)
+        
         }
     }
 
-    def loadDensities(df: DataFrame, x: Array[String], trainingFrac: Double) = {
+    def loadDensities(df: DataFrame, x: Array[String], evalSpacing: Double, trainingFrac: Double) = {
         for (col <- x) {
-            val fileName = makeDensityFileName(settings.dpath, df, col, trainingFrac)
+            val fileName = makeDensityFileName(settings.dpath, df.drop("features", "label"), col, evalSpacing, trainingFrac)
             if (Files.exists(Paths.get(fileName))) {
                 val fileSource = Source.fromFile(fileName)  
                 for(line <- fileSource.getLines){  
@@ -60,12 +64,13 @@ class ModelWrapper(settings: Settings, kernelBandeWidth: Double = 3.0) {
                 }   
                 fileSource.close() 
             }
-            logger.info("Model used: " + fileName)
         }
     }
 
-    def fitOrLoad(aggFun: String, df: DataFrame, x: Array[String], y: String, trainingFrac: Double) {
+    def fitOrLoad(aggFun: String, a: Double, b: Double, df: DataFrame, x: Array[String], y: String, trainingFrac: Double) {
         
+        val densityEvaluationSpacing = settings.densitiyInterspacEvaluation
+
         var trainingDF = df
         // Get training fraction
         if (trainingFrac != 1.0) trainingDF = uniformSampling(df, trainingFrac)
@@ -73,18 +78,18 @@ class ModelWrapper(settings: Settings, kernelBandeWidth: Double = 3.0) {
         // Save densities if not registered
         var unknownColumns = Array[String]()
         for (col <- x) {
-            val path = makeDensityFileName(settings.dpath, df, col, trainingFrac)
+            val path = makeDensityFileName(settings.dpath, df, col, densityEvaluationSpacing, trainingFrac)
             if (!Files.exists(Paths.get(path))) 
                 unknownColumns = unknownColumns :+ col
         }
-        saveDensities(trainingDF, unknownColumns, trainingFrac)
+        saveDensities(trainingDF, unknownColumns, densityEvaluationSpacing, trainingFrac)
 
         // Load all saved densities
-        loadDensities(df, x, trainingFrac)
+        loadDensities(df, x, densityEvaluationSpacing, trainingFrac)
         
         // Fit or load regression
         if (aggFun != "count") {
-            val mio = new ModelIO(settings.rpath, x, y)
+            val mio = new ModelIO(settings.rpath, df.drop("features", "label"), x, y, trainingFrac)
             //load or fit regression 
             if (mio.exists(reg)) {
                 logger.info("regression model exists and is loaded")

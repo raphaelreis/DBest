@@ -6,21 +6,21 @@ import breeze.numerics.log
 import org.apache.spark.ml.PipelineModel
 import java.nio.file.Files
 import java.nio.file.Paths
-import Tools._
+import Tools.makeFileName._
+import org.apache.spark.sql.DataFrame
 
-
-class ModelIO(dir: String, x: Array[String], y: String){
+class ModelIO(dir: String, df: DataFrame, x: Array[String], y: String, trainingFrac: Double){
     
     val logger = Logger.getLogger(this.getClass().getName())
 
     def exists(model: DBestModel) = {
-        val folderPath = makeFileName(dir, model, x, y)
+        val folderPath = makeFileName(dir, df, model, x, y, trainingFrac)
         Files.exists(Paths.get(folderPath))
     }
 
     def writeModel(model: DBestModel) = model match {
         case model: LinearRegressor => {
-            val fileName = makeFileName(dir, model, x, y)
+            val fileName = makeFileName(dir, df, model, x, y, trainingFrac)
             model.save(fileName)
         }
         case model: SparkKernelDensity => throw new Exception("Cannot write SparkKernelDensity")
@@ -28,7 +28,7 @@ class ModelIO(dir: String, x: Array[String], y: String){
     
     def readModel(model: DBestModel) = model match {
         case model: LinearRegressor => {
-            val fileName = makeFileName(dir, model, x, y)
+            val fileName = makeFileName(dir, df, model, x, y, trainingFrac)
             val pipemodel = PipelineModel.load(fileName)
             model.setModel(pipemodel)
             model
