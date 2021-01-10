@@ -14,7 +14,7 @@ class DataLoader {
             .option("inferSchema", inferSchema)
             .option("mode", mode)
             .load(path)
-            .na.drop().cache()
+            .na.drop()
         df.createOrReplaceTempView(tableName)
         df
     }

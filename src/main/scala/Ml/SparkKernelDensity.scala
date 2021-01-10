@@ -1,15 +1,16 @@
-package Ml
+package ml
 
 import org.apache.spark.mllib.stat.KernelDensity;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.SparkContext
+import traits.DBestModel
 
 
 class SparkKernelDensity(bandWidth: Double = 1.0) extends DBestModel {
     private var kd = new KernelDensity
-    val name = "kernel_density"
+    val name = "kernel_density_esitmator"
     
     def getKernelDensity() = kd
 

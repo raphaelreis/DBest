@@ -1,15 +1,16 @@
-package Ml
+package ml
 
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.regression.{LinearRegression, LinearRegressionModel}
-import Tools.hasColumn
+import tools.hasColumn
 import org.apache.log4j.{Level, Logger}
+import traits.DBestModel
 
 class LinearRegressor extends DBestModel {
     private val logger = Logger.getLogger(this.getClass().getName())
-    val name = "linear_regression"
+    val name = "linear_regressor"
     var model: PipelineModel = _
 
     def getLinearRegressionModel() = model.stages(1).asInstanceOf[LinearRegressionModel]

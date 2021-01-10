@@ -1,4 +1,4 @@
-package DBestClient
+package client
 
 import org.apache.spark.sql.SparkSession
 import java.nio.file.{Paths, Files}
@@ -7,8 +7,8 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.{functions => F}
 import org.apache.spark.mllib.stat.KernelDensity
-import Ml._
-import QueryEngine._
+import ml._
+import engine._
 import DataLoader._
 import org.apache.spark.ml.regression.LinearRegressionModel
 import DataGenerator.DataGenerator._
@@ -19,7 +19,7 @@ import settings.Settings
 import scala.collection.mutable.Map
 import traits.Analyser
 
-class DBestClient extends Analyser {
+class DBestClient (settings: Settings) extends Analyser {
   val logger = Logger.getLogger(this.getClass().getName())
   var df: DataFrame = _
   var dfSize: Long = _
@@ -51,7 +51,9 @@ class DBestClient extends Analyser {
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     val fileExists = fs.exists(new Path(path))
     if (fileExists) {
-      df = spark.read.parquet(path).cache()
+      df = spark.read.parquet(path)
+                .repartition(4 * settings.numberOfCores)
+                .cache()
       df.createOrReplaceTempView(tableName)
       getOfflineStats(df)
     } else {
@@ -63,7 +65,7 @@ class DBestClient extends Analyser {
     val dload = new DataLoader
 
     if (Files.exists(Paths.get(path))) {
-      df = dload.loadTable(spark, path, tableName, format)
+      df = dload.loadTable(spark, path, tableName, format).repartition(4 * settings.numberOfCores).cache()
       getOfflineStats(df)
     } else {
       throw new FileNotFoundException("Table does not exist on the given path")
@@ -74,6 +76,39 @@ class DBestClient extends Analyser {
     val res = spark.sql(q)
     spark.time(res.show())
     res
+  }
+
+  def queryWithSample(settings: Settings,
+      aggFun: String,
+      features: Array[String],
+      label: String,
+      a: Double,
+      b: Double,
+      trainingFrac: Double = 1.0
+  ) = aggFun match {
+    case "count" => {
+
+      // Aggregation evaluation
+      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
+      val (count, elipseTime) = qe.approxCountBySampling(df, features, label, a, b, trainingFrac)
+      (count, elipseTime)
+    }
+    case "sum" => {
+      //Aggregation evaluation
+      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
+      val (sum, elipseTime) = qe.approxSumBySampling(df, features, label, a, b, trainingFrac)
+      (sum, elipseTime)
+    }
+    case "avg" => {
+      //Aggregation evaluation
+      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
+      val (avg, elipseTime) = qe.approxAvgBySampling(df, features, label, a, b, trainingFrac)
+      (avg, elipseTime)
+    }
+    case _ =>
+      throw new NotImplementedError(
+        "Please choose between count, sum and avg aggregation function"
+      )
   }
 
   def queryWithModel(
@@ -99,32 +134,27 @@ class DBestClient extends Analyser {
       trainingFrac: Double = 1.0
   ) = aggFun match {
     case "count" => {
-      val x = features
-
       //Model fitting
       val mw = new ModelWrapper(settings, dfSize, dfMins, dfMaxs)
-      mw.fitOrLoad("count", a, b, df, x, label, trainingFrac)
+      mw.fitOrLoad("count", df, features, label, trainingFrac)
 
       // Aggregation evaluation
-      val qe = new QueryEngine(spark, dfSize, dfMins, dfMaxs)
-      val (count, elipseTime) = qe.approxCount(df, mw, x, label, a, b, 0.01)
+      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
+      val (count, elipseTime) = qe.approxCount(df, mw, features, label, a, b, 0.01)
       (count, elipseTime)
     }
     case "sum" => {
-      val x = features
-      val y = label
-
       // Dataframe processing
-      val dp = new DataProcessor.DataProcessor(df, x, y)
+      val dp = new DataProcessor.DataProcessor(df, features, label)
       val processedDf = dp.processForRegression().getPreprocessedDF()
 
       // Model fitting
       val mw = new ModelWrapper(settings, dfSize, dfMins, dfMaxs)
-      mw.fitOrLoad("sum", a, b, processedDf, x, y, trainingFrac)
+      mw.fitOrLoad("sum", processedDf, features, label, trainingFrac)
 
       //Aggregation evaluation
-      val qe = new QueryEngine(spark, dfSize, dfMins, dfMaxs)
-      val (sum, elipseTime) = qe.approxSum(df, mw, x, y, a, b, 0.01)
+      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
+      val (sum, elipseTime) = qe.approxSum(df, mw, features, label, a, b, 0.01)
       (sum, elipseTime)
     }
     case "avg" => {
@@ -137,10 +167,10 @@ class DBestClient extends Analyser {
 
       // Model fitting
       val mw = new ModelWrapper(settings, dfSize, dfMins, dfMaxs)
-      mw.fitOrLoad("avg", a, b, processedDf, x, y, trainingFrac)
+      mw.fitOrLoad("avg", processedDf, x, y, trainingFrac)
 
       //Aggregation evaluation
-      val qe = new QueryEngine(spark, dfSize, dfMins, dfMaxs)
+      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
       val (avg, elipseTime) = qe.approxAvg(df, mw, x, y, a, b, 0.01)
       (avg, elipseTime)
     }
@@ -150,80 +180,3 @@ class DBestClient extends Analyser {
       )
   }
 }
-
-// def simpleQuery1(A: Double, B: Double) {
-//     /** Run simple count query with filtering */
-//     val q1 = s"SELECT COUNT(*) FROM store_sales WHERE _c12 BETWEEN $A AND $B"
-//     val res1 = spark.sqlContext.sql(q1)
-//     spark.time(res1.show())
-// }
-
-// def simpleQuery1WithModel(A: Double, B: Double) {
-//     /**
-//       * Same as simpleQuery1 but with AQP
-//       */
-
-//     val x = Array("_c12")
-//     val y = "_c20"
-
-//     // val models = new ModelWrapper()
-//     // models.fitOrLoad(df, x, y)
-
-//     val d = new SparkKernelDensity(3.0)
-//     val kde = d.fit(df, x)
-//     // val lr = new LinearRegressor
-//     // val lrm = lr.fit(df, x, y)
-//     val qe = new QueryEngine(spark, df.count().toInt)
-
-//     val (count, elipseTime) = qe.approxCount(kde, A, B, 0.01)
-
-//     println(s"Count value with model: $count")
-//     println(s"Time to compute count: $elipseTime")
-// }
-
-// def simpleQuery2() {
-//     val q2 = "SELECT AVG(_c20) FROM store_sales WHERE _c13 BETWEEN 5 AND 70"
-//     val res2 = spark.sqlContext.sql(q2)
-//     spark.time(res2.show())
-// }
-
-// def simpleQuery2WithModel() {
-
-//     val x = Array("_c13")
-//     val y = "_c20"
-
-//     val d = new SparkKernelDensity(3.0)
-//     val kde = d.fit(df, x)
-//     val lr = new LinearRegressor
-//     val lrm = lr.fit(df, x, y)
-
-//     val qe = new QueryEngine(spark, df.count().toInt)
-//     val (avg, elipseTime) = qe.approxAvg(df, kde, lrm, x, 5, 70, 0.01)
-
-//     println(s"AVG value with model: $avg")
-//     println(s"Time to compute count: $elipseTime")
-// }
-
-// def simpleQuery3() {
-//     val q3 = "SELECT SUM(_c20) FROM store_sales WHERE _c13 BETWEEN 5 AND 70"
-//     val res3 = spark.sqlContext.sql(q3)
-//     spark.time(res3.show())
-// }
-
-// def simpleQuery3WithModel() {
-
-//     val x = Array("_c13")
-//     val y = "_c20"
-
-//     val d = new SparkKernelDensity(3.0)
-//     val kde = d.fit(df, x)
-//     val lr = new LinearRegressor
-//     val lrm = lr.fit(df, x, y)
-
-//     val qe = new QueryEngine(spark, df.count().toInt)
-//     val (sum, elipseTime) = qe.approxSum(df, kde, lrm, x, 5, 70, 0.01)
-
-//     println(s"SUM value with model: $sum")
-//     println(s"Time to compute count: $elipseTime")
-
-// }

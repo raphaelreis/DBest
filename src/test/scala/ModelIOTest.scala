@@ -2,7 +2,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql._
 import org.apache.log4j.{Level, Logger}
 import DBestClient._
-import Ml._
+import ml._
 import DataLoader._
 import java.nio.file.{Paths, Files}
 import java.io.File

@@ -1,4 +1,4 @@
-package Ml
+package ml
 
 import org.apache.spark.mllib.stat.KernelDensity
 import org.apache.spark.sql._
@@ -6,9 +6,9 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.ml.regression.LinearRegression
 import scala.collection.mutable.Map
 import org.apache.spark.rdd.RDD
-import Tools._
-import Tools.fileWriter.writeFile
-import Tools.makeDensityFileName.makeDensityFileName
+import tools._
+import tools.fileWriter.writeFile
+import tools.makeDensityFileName.makeDensityFileName
 import breeze.linalg._
 import java.nio.file.{Paths, Files}
 import scala.io._
@@ -16,11 +16,11 @@ import Sampler.Sampler._
 import settings.Settings
 import traits.Analyser
 
-class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String, Double], var dfMaxs: Map[String, Double], kernelBandeWidth: Double = 3.0) extends Analyser {
+class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String, Double], var dfMaxs: Map[String, Double]) extends Analyser {
 
     private val logger = Logger.getLogger(this.getClass().getName())
     private var reg = new LinearRegressor()
-    private var kde = new SparkKernelDensity(kernelBandeWidth)
+    private var kde = new SparkKernelDensity(settings.defaultKernelBandWidth)
     private var densities = Map[String, Array[Double]]()
 
     def getRegModel() = reg
@@ -41,7 +41,7 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
     def saveDensities(df: DataFrame, x: Array[String], evalSpacing: Double, trainingFrac: Double) = {
         if (!x.isEmpty) {
             val col = x(0)
-            val density = new SparkKernelDensity(kernelBandeWidth)
+            val density = new SparkKernelDensity(settings.defaultKernelBandWidth)
             val colRDD = df.select(col).rdd.map(_.getDouble(0)).cache()
             density.fit(colRDD)
             val (minimum, maximum) = (dfMins(col), dfMaxs(col))
@@ -67,7 +67,7 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
         }
     }
 
-    def fitOrLoad(aggFun: String, a: Double, b: Double, df: DataFrame, x: Array[String], y: String, trainingFrac: Double) {
+    def fitOrLoad(aggFun: String, df: DataFrame, x: Array[String], y: String, trainingFrac: Double) {
         
         val densityEvaluationSpacing = settings.densitiyInterspacEvaluation
 

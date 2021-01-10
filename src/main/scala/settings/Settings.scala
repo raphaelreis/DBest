@@ -10,4 +10,6 @@ class Settings(config: Config) {
     val dpath = config.getString("app.densitiesPath")
     val rpath = config.getString("app.regressionPath")
     val densitiyInterspacEvaluation = config.getDouble("app.densitiyInterspacEvaluation")
+    val defaultKernelBandWidth = config.getDouble("app.defaultKernelBandWidth")
+    val numberOfCores = config.getInt("app.numberOfCores")
 }

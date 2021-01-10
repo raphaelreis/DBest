@@ -1,6 +1,6 @@
-package Tools
+package tools
 
-import Ml.DBestModel
+import traits.DBestModel
 import scala.util.Try
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._

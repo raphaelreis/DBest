@@ -7,6 +7,7 @@ import org.apache.log4j.Logger
 import com.typesafe.config.ConfigFactory
 import settings.Settings
 import scala.collection.mutable.Map
+import client._
 
 object SensitivityAnalysisQueryRangeEffect {
   def main(args: Array[String]) {
@@ -25,10 +26,9 @@ object SensitivityAnalysisQueryRangeEffect {
     val ranges = List(0.001, 0.01, 0.1, 0.5, 1.0)
     val sampleSize = 0.1
     val aggregationFunctions = List("count", "sum", "avg")
-    // val aggregationFunctions = List("avg")
 
     // Experiment initialization
-    val client: DBestClient.DBestClient = new DBestClient.DBestClient
+    val client: DBestClient = new DBestClient(settings)
     var path = ""
     var tableName = ""
     if (settings.hdfsAvailable) {

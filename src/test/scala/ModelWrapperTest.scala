@@ -1,8 +1,8 @@
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
-import Ml.GroupByModelWrapper
-import Ml.ModelWrapper
+import ml.GroupByModelWrapper
+import ml.ModelWrapper
 import org.apache.spark.sql.functions.{rand, randn}
 import DataProcessor.DataProcessor
 import settings.Settings

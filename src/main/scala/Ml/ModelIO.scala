@@ -1,4 +1,4 @@
-package Ml
+package ml
 
 import java.io._
 import org.apache.log4j.{Level, Logger}
@@ -6,8 +6,9 @@ import breeze.numerics.log
 import org.apache.spark.ml.PipelineModel
 import java.nio.file.Files
 import java.nio.file.Paths
-import Tools.makeFileName._
+import tools.makeFileName._
 import org.apache.spark.sql.DataFrame
+import traits.DBestModel
 
 class ModelIO(dir: String, df: DataFrame, x: Array[String], y: String, trainingFrac: Double){
     

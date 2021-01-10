@@ -1,7 +1,7 @@
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
-import Ml.GroupByModelWrapper
+import ml.GroupByModelWrapper
 
 class QueryEngineTest extends AnyFunSuite {
     val logger = Logger.getLogger(this.getClass().getName())

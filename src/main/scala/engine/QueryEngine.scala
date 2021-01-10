@@ -1,4 +1,4 @@
-package QueryEngine
+package engine
 
 import breeze.integrate._
 import scala.math.exp
@@ -11,18 +11,45 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.{functions => F} 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.ml.feature.VectorAssembler
-import Ml.SparkKernelDensity
-import Ml.LinearRegressor
-import Ml.GroupByModelWrapper
+import ml.SparkKernelDensity
+import ml.LinearRegressor
+import ml.GroupByModelWrapper
 import org.apache.spark.rdd.RDD
 import org.apache.log4j.{Level, Logger}
-import Ml.ModelWrapper
+import ml.ModelWrapper
 import traits.Analyser
 import scala.collection.mutable.Map
+import Sampler.Sampler._
 
 
 class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String, Double], var dfMaxs: Map[String, Double]) extends Analyser {
     val logger = Logger.getLogger(this.getClass().getName())
+
+    def approxCountBySampling(df: DataFrame, x: Array[String], y: String, xMin: Double, xMax: Double, sampleFrac: Double = 1d) = {
+        
+        val col = x(0)
+        // Get training fraction
+        var trainingDF = df
+        if (sampleFrac != 1.0) trainingDF = uniformSampling(df, sampleFrac).cache()
+
+
+        // Compute Aggregation
+        val t0 = System.nanoTime()
+        val count = trainingDF.select(col, y).rdd.mapPartitions {
+                iter => {
+                    if (!iter.isEmpty) {
+                        Array(
+                            iter.filter{case r => {val att = r.getDouble(0); att >= xMin && att <= xMax}}
+                                .map(_ => 1).reduce(_+_)
+                        ).toIterator
+                    }
+                    else Array(0).toIterator
+                }
+        }.reduce(_+_).toDouble * (1 / sampleFrac)
+        val t1 = System.nanoTime()
+
+        (count, t1-t0)
+    }
 
     def approxCount(df: DataFrame, mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double, precision: Double) = {
         val t0 = System.nanoTime()
@@ -36,12 +63,8 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
             val selectedDensity = (ls zip density)
                             .filter {case (x: Double, va: Double) => x >= xMin && x <= xMax}
                             .map(_._2)
-            logger.info("selectedDensity: ")
-            logger.info(selectedDensity.mkString(","))
             val h = (xMax - xMin) / (selectedDensity.length - 1)
             val pointsMap = (for ((i, v) <- (0 until selectedDensity.length) zip selectedDensity) yield xMin + i * h -> v).toMap
-            logger.info("pointsMap: ")
-            logger.info(pointsMap)
             def fD(x: Double) = if (pointsMap.contains(x)) pointsMap(x) else 0.0
             val nodes = if (selectedDensity.length >= 2) selectedDensity.length else 2 
             count = trapezoid(fD, xMin, xMax, nodes) * dfSize
@@ -49,6 +72,30 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
 
         val t1 = System.nanoTime()
         (count, t1-t0)
+    }
+
+    def approxSumBySampling(df: DataFrame, x: Array[String], y: String, xMin: Double, xMax: Double, sampleFrac: Double = 1d) = {
+        
+        // Get training fraction
+        val col = x(0)
+        var trainingDF = df
+        if (sampleFrac != 1.0) trainingDF = uniformSampling(df, sampleFrac).cache()
+
+        // Compute Aggregation
+        val t0 = System.nanoTime()
+        val sum = trainingDF.select(y).rdd.mapPartitions {
+                iter => {
+                    if (!iter.isEmpty) {
+                        Array(
+                            iter.filter{case r => {val att = r.getDouble(0); att >= xMin && att <= xMax}}
+                                .map(_.getDouble(0)).reduce(_+_)
+                        ).toIterator
+                    } else Array(0.0).toIterator
+                }
+        }.reduce(_+_) * (1 / sampleFrac)
+        val t1 = System.nanoTime()
+
+        (sum, t1-t0)
     }
 
     // Only support univariate selection
@@ -96,11 +143,20 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
         (sum, t1-t0)
     }
 
+    def approxAvgBySampling(df: DataFrame, x: Array[String], y: String, xMin: Double, xMax: Double, sampleFrac: Double) = {
+        // Get training fraction
+        var trainingDF = df
+        if (sampleFrac != 1.0) trainingDF = uniformSampling(df, sampleFrac)
+        
+        // Compute Aggregation
+        val (count, timeCount) = approxCountBySampling(trainingDF, x, y, xMin, xMax)
+        val (sum, timeSum) = approxSumBySampling(trainingDF, x, y, xMin, xMax)
+        (sum / count, timeCount + timeSum)
+    }
+
     def approxAvg(df: DataFrame, mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double, precision: Double): (Double, Long) = {
         val (count, time1) = approxCount(df, mw, x, y, xMin, xMax, precision)
         val (sum, time2) = approxSum(df, mw, x, y, xMin, xMax, precision)
-        logger.info("count: " + count.toString())
-        logger.info("sum: " + sum.toString())
         (sum / count, time1 + time2)
     }
 
@@ -128,103 +184,3 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
         (ret, t1-t0)
     }
 }
-
-
-/**
-  * def approxAvg(df: DataFrame,
-            skd: SparkKernelDensity,
-            lr: LinearRegressor, 
-            x: Array[String], 
-            xMin: Double, 
-            xMax: Double, 
-            precision: Double): (Double, Double) = {
-
-        val t0 = System.nanoTime()
-
-        var kde = skd.getKernelDensity()
-        var reg = lr.getLinearRegressionModel()
-
-        import spark.implicits._
-        val ls = linspace(xMin, xMax).toArray
-        val kdeEstimates = kde.estimate(ls)
-        val ds = ls.toSeq.toDS()
-
-        val assemblerDataset = new VectorAssembler().setInputCols(Array("value")).setOutputCol("features")
-        val input = assemblerDataset.transform(ds)
-
-        val lsDs = ls.toSeq.toDS()
-        val regEstimates = reg.transform(input)
-
-        //MUST BE MODIFIED with larger data to support parallelization
-        val regArray = regEstimates.select("prediction").rdd.map((r: Row) => r.getDouble(0)).collect()
-
-        val densityRegression = kdeEstimates zip regArray
-
-        def fDR(x: Double) = {
-            val (d, r) = densityRegression.head
-            d * r
-        }
-
-        def fD = (x: Double) => densityRegression.head._1
-
-        val dR: Double = simpson(fDR, xMin, xMax, (1 / precision).toInt)
-        val d: Double = simpson(fD, xMin, xMax, (1 / precision).toInt)
-
-        val t1 = System.nanoTime()
-
-        (dR / d, t1-t0)
-    }
-
-    /**
-      * @TODO (multi dimensional filtering)
-      * def approxCount(xMin: Array[Double], xMax: Array[Double], precision: Double): (Double, Double) = {
-      */
-
-    def approxCount(skd: SparkKernelDensity, xMin: Double, xMax: Double,
-                     precision: Double) = {
-        val t0 = System.nanoTime()
-
-        var kde = skd.getKernelDensity()
-        val ls = linspace(xMin, xMax).toArray  
-        val kdeEstimates = kde.estimate(ls)
-        
-        def fD(x: Double): Double = {
-            kdeEstimates.head   
-        }
-
-        val count = simpson(fD, xMin, xMax, (1 / precision).toInt) * dfSize
-        val t1 = System.nanoTime()
-        (count, t1-t0)
-    }
-
-    def approxSum(df: DataFrame, skd: SparkKernelDensity, lr: LinearRegressor, x: Array[String], xMin: Double, xMax: Double, precision: Double): (Double, Double) = {
-        val t0 = System.nanoTime()
-
-        var kde = skd.getKernelDensity()
-        var reg = lr.getLinearRegressionModel()
-
-        import spark.implicits._
-        val ls = linspace(xMin, xMax).toArray
-        val kdeEstimates = kde.estimate(ls)
-        val ds = ls.toSeq.toDS()
-
-        val assemblerDataset = new VectorAssembler().setInputCols(Array("value")).setOutputCol("features")
-        val input = assemblerDataset.transform(ds)
-
-        val regEstimates = reg.transform(input)
-
-        //MUST BE MODIFIED with larger data to support parallelization
-        val regArray = regEstimates.select("prediction").rdd.map((r: Row) => r.getDouble(0)).collect()
-
-        val densityRegression = kdeEstimates zip regArray
-
-        def fDR(x: Double) = {
-            val (d, r) = densityRegression.head
-            d * r
-        }
-
-        val sum = simpson(fDR, xMin, xMax, (1 / precision).toInt) * dfSize
-        val t1 = System.nanoTime()
-        (sum, t1-t0)
-    }
-  */

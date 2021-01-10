@@ -1,7 +1,7 @@
 package dbest
 
 import java.io._
-import DBestClient.DBestClient
+import client.DBestClient
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import org.apache.log4j.{Level, Logger}
@@ -23,7 +23,7 @@ object AvgExperiment {
     val agg = "avg"
     
     val ta = System.nanoTime()
-    val client: DBestClient = new DBestClient
+    val client: DBestClient = new DBestClient(settings)
     var path = ""
     var tableName = ""
     if (settings.hdfsAvailable) {
