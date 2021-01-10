@@ -6,6 +6,12 @@ scalaVersion := "2.11.12"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.3" % Test
 
+libraryDependencies += "com.typesafe.play" %% "play-json" % "2.7.1"
+
+libraryDependencies += "com.github.pathikrit" %% "better-files" % "3.9.0"
+
+libraryDependencies += "com.typesafe" % "config" % "1.4.0"
+
 libraryDependencies ++= {
   val sparkVersion = "2.4.6"
   Seq(
