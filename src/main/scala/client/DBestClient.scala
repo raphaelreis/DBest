@@ -11,7 +11,6 @@ import ml._
 import engine._
 import DataLoader._
 import org.apache.spark.ml.regression.LinearRegressionModel
-import DataGenerator.DataGenerator._
 import javassist.NotFoundException
 import java.io.FileNotFoundException
 import Sampler.Sampler._

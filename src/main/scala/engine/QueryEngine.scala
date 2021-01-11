@@ -123,7 +123,7 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
         val assemblerDataset = new VectorAssembler().setInputCols(Array(col)).setOutputCol("features")
         val input = assemblerDataset.transform(ds)
         val regEstimates = reg.transform(input).select("prediction").rdd.map(_.getDouble(0)).collect()
-        val selectedRegressionPred = (ls zip regEstimates)
+        var selectedRegressionPred = (ls zip regEstimates)
                                         .filter {case (x: Double, va: Double) => x >= xMin && x <= xMax}
                                         .map(_._2)
 
