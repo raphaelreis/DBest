@@ -19,7 +19,7 @@ import settings.Settings
 import scala.collection.mutable.Map
 import traits.Analyser
 
-class DBestClient (settings: Settings) extends Analyser {
+class DBestClient (settings: Settings, appName: String = "DBEst Client") extends Analyser {
   val logger = Logger.getLogger(this.getClass().getName())
   var df: DataFrame = _
   var dfSize: Long = _
@@ -28,7 +28,7 @@ class DBestClient (settings: Settings) extends Analyser {
 
   val spark: SparkSession = SparkSession.builder
     .master("local")
-    .appName("DBest client")
+    .appName(appName)
     .getOrCreate()
 
   def close() = {
@@ -52,7 +52,7 @@ class DBestClient (settings: Settings) extends Analyser {
     val fileExists = fs.exists(new Path(path))
     if (fileExists) {
       df = spark.read.parquet(path)
-                .repartition(4 * settings.numberOfCores)
+                .repartition((4 * settings.numberOfCores).toInt)
                 .cache()
       df.createOrReplaceTempView(tableName)
       getOfflineStats(df)
@@ -65,7 +65,10 @@ class DBestClient (settings: Settings) extends Analyser {
     val dload = new DataLoader
 
     if (Files.exists(Paths.get(path))) {
-      df = dload.loadTable(spark, path, tableName, format).repartition(4 * settings.numberOfCores).cache()
+      logger.info("Table loading running...")
+      df = dload.loadTable(spark, path, tableName, format)
+                .repartition((4 * settings.numberOfCores).toInt)
+                .cache()
       getOfflineStats(df)
     } else {
       throw new FileNotFoundException("Table does not exist on the given path")
@@ -87,7 +90,6 @@ class DBestClient (settings: Settings) extends Analyser {
       trainingFrac: Double = 1.0
   ) = aggFun match {
     case "count" => {
-
       // Aggregation evaluation
       val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
       val (count, elipseTime) = qe.approxCountBySampling(df, features, label, a, b, trainingFrac)
