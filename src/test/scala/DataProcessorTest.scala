@@ -1,7 +1,7 @@
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
-import Tools.hasColumn
+import tools.hasColumn
 import scala.collection.mutable
 import org.apache.spark.rdd.RDD
 

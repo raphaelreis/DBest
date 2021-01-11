@@ -17,6 +17,7 @@ object SensitivityAnalysisQueryRangeEffect {
     val subdirTime = "response_time/"
 
     // Init settings and logger
+    val appName = "Sensi. Analysis Query Range Effect"
     val logger = Logger.getLogger(this.getClass().getName())
     val confFileName = "conf/application.conf"
     val conf = ConfigFactory.parseFile(new File(confFileName)).resolve()
@@ -28,8 +29,8 @@ object SensitivityAnalysisQueryRangeEffect {
     val aggregationFunctions = List("count", "sum", "avg")
 
     // Experiment initialization
-    val client: DBestClient = new DBestClient(settings)
-    var path = ""
+    val client: DBestClient = new DBestClient(settings, appName)
+    var path = if(args.length == 1) System.getProperty("user.dir") + "/" + args(0) else ""
     var tableName = ""
     if (settings.hdfsAvailable) {
       // path = s"data/${agg}_df_${distribution}_label_10m.parquet"
@@ -37,9 +38,9 @@ object SensitivityAnalysisQueryRangeEffect {
       // client.loadHDFSTable(path, tableName)
       println("hello world")
     } else {
-      path = "data/store_sales_sample_processed.parquet"
+      path = if (path.isEmpty) System.getProperty("user.dir") + "/data/store_sales_sample.dat" else path
       tableName = "store_sales_sample"
-      client.loadTable(path, tableName)
+      client.loadTable(path, tableName, "csv")
     }
     val features = Array("ss_list_price")
     val label = "ss_wholesale_cost"
@@ -82,11 +83,6 @@ object SensitivityAnalysisQueryRangeEffect {
           )
 
           val relErr = (exactRes - approxRes) / exactRes
-          logger.info("approxRes: " + approxRes.toString())
-          logger.info("exactRes: " + exactRes.toString())
-          logger.info("relErr: " + relErr.toString())
-          logger.info("relErr / queriesAfNumber: " + (relErr / queriesAfNumber).toString())
-          logger.info("time / queriesAfNumber.toLong: " + (time / queriesAfNumber.toLong).toString())
           resMap(af) += relErr / queriesAfNumber
           timeMap(af) += time / queriesAfNumber.toLong
         }

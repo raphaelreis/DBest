@@ -20,6 +20,7 @@ object OverheadAnalysis {
     val subdirTime = "training_time/"
 
     // Init settings and logger
+    val appName = "Overhead Analysis"
     val logger = Logger.getLogger(this.getClass().getName())
     val confFileName = "conf/application.conf"
     val newDensityPathConfig = ConfigFactory.parseString("app.densitiesPath=${basedir}models/overhead_models/densities/")
@@ -32,8 +33,8 @@ object OverheadAnalysis {
     val sampleSize = List(0.001, 0.01, 0.1, 0.5, 1.0)
     
     // Experiment initialization
-    val client = new DBestClient(settings)
-    var path = ""
+    val client = new DBestClient(settings, appName)
+    var path = if(args.length == 1) System.getProperty("user.dir") + "/" + args(0) else ""
     var tableName = ""
     if (settings.hdfsAvailable) {
       // path = s"data/${agg}_df_${distribution}_label_10m.parquet"
@@ -41,9 +42,9 @@ object OverheadAnalysis {
       // client.loadHDFSTable(path, tableName)
       println("hello world")
     } else {
-      path = "data/store_sales_sample_processed.parquet"
+      path = if (path.isEmpty) System.getProperty("user.dir") + "/data/store_sales_sample.dat" else path
       tableName = "store_sales_sample"
-      client.loadTable(path, tableName)
+      client.loadTable(path, tableName, "csv")
     }
     val features = Array("ss_list_price")
     val label = "ss_wholesale_cost"

@@ -18,6 +18,7 @@ object SensitivityAnalysisSampleSizeEffect {
     val subdirTime = "response_time/"
 
     // Init settings and logger
+    val appName = "Sensi. Analysis Sample Size"
     val logger = Logger.getLogger(this.getClass().getName())
     val confFileName = "conf/application.conf"
     val conf = ConfigFactory.parseFile(new File(confFileName)).resolve()
@@ -32,8 +33,8 @@ object SensitivityAnalysisSampleSizeEffect {
     val jsonContent = scala.io.Source.fromFile(fileName).mkString
     val json: JsValue = Json.parse(jsonContent)
 
-    val client: DBestClient = new DBestClient(settings, "Sensi. Analysis Sample Size")
-    var path = ""
+    val client: DBestClient = new DBestClient(settings, appName)
+    var path = if(args.length == 1) System.getProperty("user.dir") + "/" + args(0) else ""
     var tableName = ""
     if (settings.hdfsAvailable) {
       // path = s"data/${agg}_df_${distribution}_label_10m.parquet"
@@ -41,9 +42,9 @@ object SensitivityAnalysisSampleSizeEffect {
       // client.loadHDFSTable(path, tableName)
       println("hello world")
     } else {
-      path = "data/store_sales_sample_processed.parquet"
+      path = if (path.isEmpty) System.getProperty("user.dir") + "/data/store_sales_sample.dat" else path
       tableName = "store_sales_sample"
-      client.loadTable(path, tableName)
+      client.loadTable(path, tableName, "csv")
     }
     val features = Array("ss_list_price")
     val label = "ss_wholesale_cost"
@@ -67,8 +68,8 @@ object SensitivityAnalysisSampleSizeEffect {
         val queriesAfNumber = ranges.length.toDouble
         for (l <- ranges) {
           val (a, b) = (l(0), l(1))
-          val q =
-            s"SELECT ${af.toUpperCase()}($label) FROM $tableName WHERE ${features(0)} BETWEEN $a AND $b"
+          val q = s"SELECT ${af.toUpperCase()}($label) FROM $tableName WHERE ${features(0)} BETWEEN $a AND $b"
+          logger.info("query: " + q)
           val resDf = client.query(q)
           val exactRes = if (af == "count") {
             resDf.take(1)(0)(0).asInstanceOf[Long].toDouble
@@ -113,6 +114,7 @@ object SensitivityAnalysisSampleSizeEffect {
       new PrintWriter(timeWriteNameMB) { write(timeStringMB); close() }
 
       // Write Sample-Based Results
+      logger.info("errMapSB: " + errMapSB.mkString(","))
       val errStringSB = Json.stringify(Json.toJson(errMapSB))
       val timeStringSB = Json.stringify(Json.toJson(timeMapSB))
       val errWriteNameSB = dirSampleBased + subdirErr + s"relative_error_$sampleSize.json"

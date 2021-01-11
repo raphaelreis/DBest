@@ -2,6 +2,8 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
 import ml.GroupByModelWrapper
+import org.apache.spark.sql.{functions=>F}
+import scala.collection.mutable.Map
 
 class QueryEngineTest extends AnyFunSuite {
     val logger = Logger.getLogger(this.getClass().getName())
@@ -40,12 +42,22 @@ class QueryEngineTest extends AnyFunSuite {
         val gmw: GroupByModelWrapper = new GroupByModelWrapper()
         gmw.fit(dp, groupColumn)
 
+        var dfMins = Map[String, Double]()
+        var dfMaxs = Map[String, Double]()
+        val groupByDfCount = df.count()
+        for (col <- groupByDf.columns) {
+        val minMax = groupByDf.agg(F.min(col), F.max(col)).head.toSeq
+        val (minimum: Double, maximum: Double) = (minMax(0).toString().toDouble, minMax(1).toString().toDouble)
+            dfMins += col -> minimum
+            dfMaxs += col -> maximum
+        }
+
         /**
           * @BUG: the groupBymodelWrapper can feat only with several features
           */
         logger.info("getKdeModels: " + gmw.getKdeModels().mkString)
 
-        val qe: QueryEngine.QueryEngine = new QueryEngine.QueryEngine(spark, numberDataPoints)
+        val qe: engine.QueryEngine = new engine.QueryEngine(spark, groupByDfCount, dfMins, dfMaxs)
         val (countPerGroupValue, computeTime) = qe.groupByApproxCount(
                                               gmw, 
                                               groupValuesCount,

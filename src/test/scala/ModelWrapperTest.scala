@@ -8,6 +8,8 @@ import DataProcessor.DataProcessor
 import settings.Settings
 import com.typesafe.config.ConfigFactory
 import java.io.File
+import org.apache.spark.sql.{functions=>F}
+import scala.collection.mutable.Map
 
 class ModelWrapperTest extends AnyFunSuite {
     val logger = Logger.getLogger(this.getClass().getName())
@@ -26,8 +28,19 @@ class ModelWrapperTest extends AnyFunSuite {
         val randomDf = idx.select("id").withColumn("uniform", rand(42))
 
         val features = Array("uniform")
-        val mw = new ModelWrapper(settings)
-        mw.saveDensities(randomDf, features, 1.0)
+
+        var dfMins = Map[String, Double]()
+        var dfMaxs = Map[String, Double]()
+        val randomDfCount = randomDf.count()
+        for (col <- randomDf.columns) {
+        val minMax = randomDf.agg(F.min(col), F.max(col)).head.toSeq
+        val (minimum: Double, maximum: Double) = (minMax(0).toString().toDouble, minMax(1).toString().toDouble)
+            dfMins += col -> minimum
+            dfMaxs += col -> maximum
+        }
+
+        val mw = new ModelWrapper(settings, randomDfCount, dfMins, dfMaxs)
+        mw.saveDensities(randomDf, features, settings.densitiyInterspacEvaluation, 1.0)
     }
 
     test("ModelWrapper test fitOrLoad method") {
@@ -39,7 +52,21 @@ class ModelWrapperTest extends AnyFunSuite {
         val dp = new DataProcessor(randomDf, features, label)
         dp.processForRegression()
         val df = dp.getPreprocessedDF()
-        val mw = new ModelWrapper(settings)
+
+
+
+        var dfMins = Map[String, Double]()
+        var dfMaxs = Map[String, Double]()
+        val randomDfCount = randomDf.count()
+        for (col <- randomDf.columns) {
+        val minMax = randomDf.agg(F.min(col), F.max(col)).head.toSeq
+        val (minimum: Double, maximum: Double) = (minMax(0).toString().toDouble, minMax(1).toString().toDouble)
+            dfMins += col -> minimum
+            dfMaxs += col -> maximum
+        }
+
+
+        val mw = new ModelWrapper(settings, randomDfCount, dfMins, dfMaxs)
         mw.fitOrLoad("sum", df, features, label, 1.0)
     }
 

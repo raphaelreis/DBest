@@ -18,6 +18,7 @@ import Sampler.Sampler._
 import settings.Settings
 import scala.collection.mutable.Map
 import traits.Analyser
+import org.apache.spark.sql.types.DoubleType
 
 class DBestClient (settings: Settings, appName: String = "DBEst Client") extends Analyser {
   val logger = Logger.getLogger(this.getClass().getName())
@@ -27,7 +28,6 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
   var dfMaxs = Map[String, Double]()
 
   val spark: SparkSession = SparkSession.builder
-    .master("local")
     .appName(appName)
     .getOrCreate()
 
@@ -39,8 +39,7 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
     dfSize = df.count()
     for (col <- df.columns) {
       val minMax = df.agg(F.min(col), F.max(col)).head.toSeq
-      val (minimum: Double, maximum: Double) =
-        (minMax(0).toString().toDouble, minMax(1).toString().toDouble)
+      val (minimum: Double, maximum: Double) = (minMax(0).toString().toDouble, minMax(1).toString().toDouble)
       dfMins += col -> minimum
       dfMaxs += col -> maximum
     }
@@ -65,13 +64,18 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
     val dload = new DataLoader
 
     if (Files.exists(Paths.get(path))) {
-      logger.info("Table loading running...")
-      df = dload.loadTable(spark, path, tableName, format)
+      val tmpDf = dload.loadTable(spark, path, tableName, format)
                 .repartition((4 * settings.numberOfCores).toInt)
-                .cache()
+      // Temporary implementation specific to store_sales.dat
+      df = tmpDf.withColumn("ss_wholesale_cost", F.col("_c11").cast(DoubleType))
+              .withColumn("ss_list_price", F.col("_c12").cast(DoubleType))
+              .select("ss_list_price", "ss_wholesale_cost")
+              .cache()
+      ///
+      df.createOrReplaceTempView(tableName)
       getOfflineStats(df)
     } else {
-      throw new FileNotFoundException("Table does not exist on the given path")
+      throw new FileNotFoundException("Table does not exist on the path: " + path)
     }
   }
 
