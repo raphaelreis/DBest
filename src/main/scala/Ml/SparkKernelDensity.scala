@@ -6,9 +6,11 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.SparkContext
 import traits.DBestModel
+import org.apache.log4j.{Level, Logger}
 
 
 class SparkKernelDensity(bandWidth: Double = 1.0) extends DBestModel {
+    val logger = Logger.getLogger(this.getClass().getName())
     private var kd = new KernelDensity
     val name = "kernel_density_esitmator"
     

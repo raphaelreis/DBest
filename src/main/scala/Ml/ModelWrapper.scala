@@ -42,7 +42,7 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
         if (!x.isEmpty) {
             val col = x(0)
             val density = new SparkKernelDensity(settings.defaultKernelBandWidth)
-            val colRDD = df.select(col).rdd.map(_.getDouble(0)).cache()
+            val colRDD = df.select(col).rdd.map(_.getDouble(0))
             density.fit(colRDD)
             val (minimum, maximum) = (dfMins(col), dfMaxs(col))
             val precision = ((maximum - minimum) / evalSpacing).toInt
@@ -78,7 +78,7 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
         // Save densities if not registered
         var unknownColumns = Array[String]()
         for (col <- x) {
-            val path = makeDensityFileName(settings.dpath, df, col, densityEvaluationSpacing, trainingFrac)
+            val path = makeDensityFileName(settings.dpath, df.drop("features", "label"), col, densityEvaluationSpacing, trainingFrac)
             if (!Files.exists(Paths.get(path))) 
                 unknownColumns = unknownColumns :+ col
         }

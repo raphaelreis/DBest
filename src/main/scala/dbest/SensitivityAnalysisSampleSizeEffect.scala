@@ -24,16 +24,15 @@ object SensitivityAnalysisSampleSizeEffect {
     val settings = new Settings(conf)
 
     // Experiment parameter
-    // val sampleSizes = List(0.001, 0.01, 0.1, 0.5, 1.0)
+    val sampleSizes = List(0.001, 0.01, 0.1, 0.5, 1.0)
     val aggregationFunctions = List("count", "sum", "avg")
-    val sampleSizes = List(0.5, 1.0)
 
     // load queries
     val fileName = "experiments/sensitivity_analysis_sampleSize_queries.json"
     val jsonContent = scala.io.Source.fromFile(fileName).mkString
     val json: JsValue = Json.parse(jsonContent)
 
-    val client: DBestClient = new DBestClient(settings)
+    val client: DBestClient = new DBestClient(settings, "Sensi. Analysis Sample Size")
     var path = ""
     var tableName = ""
     if (settings.hdfsAvailable) {
