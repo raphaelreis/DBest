@@ -3,8 +3,8 @@ package engine
 import breeze.integrate._
 import scala.math.exp
 import org.apache.spark.mllib.stat.KernelDensity
-import breeze.linalg._
-import breeze.integrate._
+import breeze.linalg.linspace
+import breeze.integrate.trapezoid
 import scala.collection.mutable.Stack
 import org.apache.spark.ml.regression.LinearRegressionModel
 import org.apache.spark.sql._
@@ -24,30 +24,27 @@ import Sampler.Sampler._
 
 class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String, Double], var dfMaxs: Map[String, Double]) extends Analyser {
     val logger = Logger.getLogger(this.getClass().getName())
-
+    
     def approxCountBySampling(df: DataFrame, x: Array[String], y: String, xMin: Double, xMax: Double, sampleFrac: Double = 1d) = {
         
         val col = x(0)
+        val sampleWeight = 1.0 / sampleFrac
         // Get training fraction
         var trainingDF = df
         if (sampleFrac != 1.0) trainingDF = uniformSampling(df, sampleFrac).cache()
-
 
         // Compute Aggregation
         val t0 = System.nanoTime()
         val count = trainingDF.select(col, y).rdd.mapPartitions {
                 iter => {
                     if (!iter.isEmpty) {
-                        Array(
-                            iter.filter{case r => {val att = r.getDouble(0); att >= xMin && att <= xMax}}
-                                .map(_ => 1).reduce(_+_)
-                        ).toIterator
-                    }
-                    else Array(0).toIterator
+                            Array(iter.filter{case r => {val att = r.getDouble(0); att >= xMin && att <= xMax}}
+                                .map(_ => 1.0).foldLeft(0.0)(_+_)).toIterator
+                    } else Array(0.0).toIterator
+                    
                 }
-        }.reduce(_+_).toDouble * (1 / sampleFrac)
+        }.reduce(_+_).toDouble * sampleWeight
         val t1 = System.nanoTime()
-
         (count, t1-t0)
     }
 
@@ -75,24 +72,22 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
     }
 
     def approxSumBySampling(df: DataFrame, x: Array[String], y: String, xMin: Double, xMax: Double, sampleFrac: Double = 1d) = {
-        
         // Get training fraction
         val col = x(0)
+        val sampleWeight = 1.0 / sampleFrac
         var trainingDF = df
         if (sampleFrac != 1.0) trainingDF = uniformSampling(df, sampleFrac).cache()
 
         // Compute Aggregation
         val t0 = System.nanoTime()
-        val sum = trainingDF.select(y).rdd.mapPartitions {
+        val sum = trainingDF.select(col, y).rdd.mapPartitions {
                 iter => {
-                    if (!iter.isEmpty) {
-                        Array(
-                            iter.filter{case r => {val att = r.getDouble(0); att >= xMin && att <= xMax}}
-                                .map(_.getDouble(0)).reduce(_+_)
-                        ).toIterator
-                    } else Array(0.0).toIterator
+                        if (!iter.isEmpty) {
+                            Array(iter.filter{case r => {val att = r.getDouble(0); att >= xMin && att <= xMax}}
+                                    .map(_.getDouble(1)).foldLeft(0.0)(_+_)).toIterator
+                        } else Array(0.0).toIterator
                 }
-        }.reduce(_+_) * (1 / sampleFrac)
+        }.reduce(_+_) * sampleWeight
         val t1 = System.nanoTime()
 
         (sum, t1-t0)
