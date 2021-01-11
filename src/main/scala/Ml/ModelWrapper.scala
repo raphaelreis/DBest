@@ -42,7 +42,7 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
         if (!x.isEmpty) {
             val col = x(0)
             val density = new SparkKernelDensity(settings.defaultKernelBandWidth)
-            val colRDD = df.select(col).rdd.map(_.getDouble(0))
+            val colRDD = df.select(col).rdd.map(_.getDouble(0)).cache()
             density.fit(colRDD)
             val (minimum, maximum) = (dfMins(col), dfMaxs(col))
             val precision = ((maximum - minimum) / evalSpacing).toInt
