@@ -89,8 +89,8 @@ object OverheadAnalysis {
       client.close()
     } catch {
       case e: Exception => {
-        logger.info("timeWriteName: " + timeWriteName)
-        logger.info("spaceWriteName: " + spaceWriteName)
+        logger.info("timeString: " + timeString)
+        logger.info("spaceString: " + spaceString)
       }
     } finally {
       client.close()
