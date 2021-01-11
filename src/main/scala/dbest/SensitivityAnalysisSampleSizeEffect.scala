@@ -104,23 +104,35 @@ object SensitivityAnalysisSampleSizeEffect {
           timeMapSB(af) += timeSB / queriesAfNumber.toLong    
         }
       }
-
-      // Write Model-Based Results
+      
       val errStringMB = Json.stringify(Json.toJson(errMapMB))
       val timeStringMB = Json.stringify(Json.toJson(timeMapMB))
-      val errWriteNameMB = dirModelBased + subdirErr + s"relative_error_$sampleSize.json"
-      val timeWriteNameMB = dirModelBased + subdirTime + s"response_time_$sampleSize.json"
-      new PrintWriter(errWriteNameMB) { write(errStringMB); close() }
-      new PrintWriter(timeWriteNameMB) { write(timeStringMB); close() }
-
-      // Write Sample-Based Results
-      logger.info("errMapSB: " + errMapSB.mkString(","))
       val errStringSB = Json.stringify(Json.toJson(errMapSB))
       val timeStringSB = Json.stringify(Json.toJson(timeMapSB))
-      val errWriteNameSB = dirSampleBased + subdirErr + s"relative_error_$sampleSize.json"
-      val timeWriteNameSB = dirSampleBased + subdirTime + s"response_time_$sampleSize.json"
-      new PrintWriter(errWriteNameSB) { write(errStringSB); close() }
-      new PrintWriter(timeWriteNameSB) { write(timeStringSB); close() }
+      
+      try {
+        // Write Model-Based Results
+        val errWriteNameMB = dirModelBased + subdirErr + s"relative_error_$sampleSize.json"
+        val timeWriteNameMB = dirModelBased + subdirTime + s"response_time_$sampleSize.json"
+        new PrintWriter(errWriteNameMB) { write(errStringMB); close() }
+        new PrintWriter(timeWriteNameMB) { write(timeStringMB); close() }
+        
+        // Write Sample-Based Results
+        val errWriteNameSB = dirSampleBased + subdirErr + s"relative_error_$sampleSize.json"
+        val timeWriteNameSB = dirSampleBased + subdirTime + s"response_time_$sampleSize.json"
+        new PrintWriter(errWriteNameSB) { write(errStringSB); close() }
+        new PrintWriter(timeWriteNameSB) { write(timeStringSB); close() }
+      } catch {
+        case e: Exception => {
+          logger.info("errStringMB: " + errStringMB)
+          logger.info("timeStringMB: " + timeStringMB)
+          logger.info("errStringSB: " + errStringSB)
+          logger.info("timeStringSB: " + timeStringSB)
+        }
+      } finally {
+        client.close()
+      }
+      
     }
   }
 }

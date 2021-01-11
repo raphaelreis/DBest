@@ -87,14 +87,20 @@ object SensitivityAnalysisQueryRangeEffect {
           timeMap(af) += time / queriesAfNumber.toLong
         }
       }
-
-      println(resMap)
       val errString = Json.stringify(Json.toJson(resMap))
       val timeString = Json.stringify(Json.toJson(timeMap))
-      val errWriteName = dir + subdirErr + s"relative_error_$range.json"
-      val timeWriteName = dir + subdirTime + s"response_time_$range.json"
-      new PrintWriter(errWriteName) { write(errString); close() }
-      new PrintWriter(timeWriteName) { write(timeString); close() }
+      try {
+        val errWriteName = dir + subdirErr + s"relative_error_$range.json"
+        val timeWriteName = dir + subdirTime + s"response_time_$range.json"
+        new PrintWriter(errWriteName) { write(errString); close() }
+        new PrintWriter(timeWriteName) { write(timeString); close() }
+      } catch {
+        case e: Exception => {
+          logger.info("errString: " + errString)
+          logger.info("timeString: " + timeString)
+        }
+      }
+      
     }
   }
 }

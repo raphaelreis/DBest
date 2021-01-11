@@ -57,9 +57,15 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
         for ((col, density) <- densities) {
             val (minimum, maximum) = (dfMins(col), dfMaxs(col))
             val ls = linspace(minimum, maximum, density.length).toArray
-            val selectedDensity = (ls zip density)
+            var selectedDensity = (ls zip density)
                             .filter {case (x: Double, va: Double) => x >= xMin && x <= xMax}
                             .map(_._2)
+            
+            if (selectedDensity.length < 5) {
+                selectedDensity = (ls zip density)
+                            .filter {case (x: Double, va: Double) => x >= xMin - 0.5 && x <= xMax + 0.5}
+                            .map(_._2)
+            }
             val h = (xMax - xMin) / (selectedDensity.length - 1)
             val pointsMap = (for ((i, v) <- (0 until selectedDensity.length) zip selectedDensity) yield xMin + i * h -> v).toMap
             def fD(x: Double) = if (pointsMap.contains(x)) pointsMap(x) else 0.0
@@ -107,7 +113,7 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
         val ls = linspace(minimum, maximum, density.length).toArray
         
         // Make density points
-        val selectedDensity = (ls zip density)
+        var selectedDensity = (ls zip density)
                                 .filter {case (x: Double, va: Double) => x >= xMin && x <= xMax}
                                 .map(_._2)
         
@@ -120,7 +126,16 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
         val selectedRegressionPred = (ls zip regEstimates)
                                         .filter {case (x: Double, va: Double) => x >= xMin && x <= xMax}
                                         .map(_._2)
-        
+
+
+        if (selectedDensity.length < 5) {
+                selectedDensity = (ls zip density)
+                            .filter {case (x: Double, va: Double) => x >= xMin - 0.5 && x <= xMax + 0.5}
+                            .map(_._2)
+                selectedRegressionPred = (ls zip regEstimates)
+                                        .filter {case (x: Double, va: Double) => x >= xMin - 0.5 && x <= xMax + 0.5}
+                                        .map(_._2)
+            }
 
         // Mapping for integration
         val h = (xMax - xMin) / (selectedDensity.length - 1)
