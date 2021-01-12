@@ -7,6 +7,6 @@ trait Analyser {
   var dfMins: Map[String,Double]
   var dfMaxs: Map[String,Double]
 }
-trait DBestModel {
+trait DBEstModel {
     val name: String
 }

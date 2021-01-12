@@ -1,6 +1,6 @@
 package tools
 
-import traits.DBestModel
+import traits.DBEstModel
 import scala.util.Try
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
@@ -8,7 +8,7 @@ import java.io._
 import math.round
 
 object makeFileName {
-    def makeFileName(dir: String, df: DataFrame,  model: DBestModel, x: Array[String], y: String, trainingFrac: Double): String = {
+    def makeFileName(dir: String, df: DataFrame,  model: DBEstModel, x: Array[String], y: String, trainingFrac: Double): String = {
         dir + model.name + "_" + df.columns.mkString + x.mkString("_") + y + "_" + trainingFrac.toString()
     }
 }

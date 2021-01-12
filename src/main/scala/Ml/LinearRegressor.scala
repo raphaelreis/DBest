@@ -6,9 +6,9 @@ import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.regression.{LinearRegression, LinearRegressionModel}
 import tools.hasColumn
 import org.apache.log4j.{Level, Logger}
-import traits.DBestModel
+import traits.DBEstModel
 
-class LinearRegressor extends DBestModel {
+class LinearRegressor extends DBEstModel {
     private val logger = Logger.getLogger(this.getClass().getName())
     val name = "linear_regressor"
     var model: PipelineModel = _

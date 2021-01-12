@@ -8,18 +8,18 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import tools.makeFileName._
 import org.apache.spark.sql.DataFrame
-import traits.DBestModel
+import traits.DBEstModel
 
 class ModelIO(dir: String, df: DataFrame, x: Array[String], y: String, trainingFrac: Double){
     
     val logger = Logger.getLogger(this.getClass().getName())
 
-    def exists(model: DBestModel) = {
+    def exists(model: DBEstModel) = {
         val folderPath = makeFileName(dir, df, model, x, y, trainingFrac)
         Files.exists(Paths.get(folderPath))
     }
 
-    def writeModel(model: DBestModel) = model match {
+    def writeModel(model: DBEstModel) = model match {
         case model: LinearRegressor => {
             val fileName = makeFileName(dir, df, model, x, y, trainingFrac)
             model.save(fileName)
@@ -27,7 +27,7 @@ class ModelIO(dir: String, df: DataFrame, x: Array[String], y: String, trainingF
         case model: SparkKernelDensity => throw new Exception("Cannot write SparkKernelDensity")
     }
     
-    def readModel(model: DBestModel) = model match {
+    def readModel(model: DBEstModel) = model match {
         case model: LinearRegressor => {
             val fileName = makeFileName(dir, df, model, x, y, trainingFrac)
             val pipemodel = PipelineModel.load(fileName)

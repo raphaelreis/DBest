@@ -81,20 +81,14 @@ object OverheadAnalysis {
     val timeString = Json.stringify(Json.toJson(timeMap))
     val spaceString = Json.stringify(Json.toJson(spaceMap))
 
-    try {
-      val timeWriteName = dir + subdirTime + s"time_vs_sample_size.json"
-      val spaceWriteName = dir + subdirSpace + s"space_overhead_vs_sample_size.json"
-      new PrintWriter(timeWriteName) { write(timeString); close() }
-      new PrintWriter(spaceWriteName) { write(spaceString); close() } 
-      client.close()
-    } catch {
-      case e: Exception => {
-        logger.info("timeString: " + timeString)
-        logger.info("spaceString: " + spaceString)
-      }
-    } finally {
-      client.close()
-    }
-       
+    val timeWriteName = dir + subdirTime + s"time_vs_sample_size.json"
+    val spaceWriteName = dir + subdirSpace + s"space_overhead_vs_sample_size.json"
+    new PrintWriter(timeWriteName) { write(timeString); close() }
+    new PrintWriter(spaceWriteName) { write(spaceString); close() } 
+    
+    logger.info("timeString: " + timeString)
+    logger.info("spaceString: " + spaceString)
+
+    client.close   
   }
 }

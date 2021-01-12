@@ -1,9 +1,9 @@
 package ml
 
 // import ml.dmlc.xgboost4j.scala.spark.{XGBoostRegressionModel,XGBoostRegressor}
-import traits.DBestModel
+import traits.DBEstModel
 
-class DBEstXGBoostRegressor extends DBestModel {
+class DBEstXGBoostRegressor extends DBEstModel {
   val name = "xgboost_regressor"
 }
 

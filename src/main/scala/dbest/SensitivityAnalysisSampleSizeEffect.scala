@@ -43,7 +43,7 @@ object SensitivityAnalysisSampleSizeEffect {
       println("hello world")
     } else {
       path = if (path.isEmpty) System.getProperty("user.dir") + "/data/store_sales_sample.dat" else path
-      tableName = "store_sales_sample"
+      tableName = "store_sales"
       client.loadTable(path, tableName, "csv")
     }
     val features = Array("ss_list_price")
@@ -69,7 +69,6 @@ object SensitivityAnalysisSampleSizeEffect {
         for (l <- ranges) {
           val (a, b) = (l(0), l(1))
           val q = s"SELECT ${af.toUpperCase()}($label) FROM $tableName WHERE ${features(0)} BETWEEN $a AND $b"
-          logger.info("query: " + q)
           val resDf = client.query(q)
           val exactRes = if (af == "count") {
             resDf.take(1)(0)(0).asInstanceOf[Long].toDouble
@@ -110,29 +109,23 @@ object SensitivityAnalysisSampleSizeEffect {
       val errStringSB = Json.stringify(Json.toJson(errMapSB))
       val timeStringSB = Json.stringify(Json.toJson(timeMapSB))
       
-      try {
-        // Write Model-Based Results
-        val errWriteNameMB = dirModelBased + subdirErr + s"relative_error_$sampleSize.json"
-        val timeWriteNameMB = dirModelBased + subdirTime + s"response_time_$sampleSize.json"
-        new PrintWriter(errWriteNameMB) { write(errStringMB); close() }
-        new PrintWriter(timeWriteNameMB) { write(timeStringMB); close() }
-        
-        // Write Sample-Based Results
-        val errWriteNameSB = dirSampleBased + subdirErr + s"relative_error_$sampleSize.json"
-        val timeWriteNameSB = dirSampleBased + subdirTime + s"response_time_$sampleSize.json"
-        new PrintWriter(errWriteNameSB) { write(errStringSB); close() }
-        new PrintWriter(timeWriteNameSB) { write(timeStringSB); close() }
-      } catch {
-        case e: Exception => {
-          logger.info("errStringMB: " + errStringMB)
-          logger.info("timeStringMB: " + timeStringMB)
-          logger.info("errStringSB: " + errStringSB)
-          logger.info("timeStringSB: " + timeStringSB)
-        }
-      } finally {
-        client.close()
-      }
+      // Write Model-Based Results
+      val errWriteNameMB = dirModelBased + subdirErr + s"relative_error_$sampleSize.json"
+      val timeWriteNameMB = dirModelBased + subdirTime + s"response_time_$sampleSize.json"
+      new PrintWriter(errWriteNameMB) { write(errStringMB); close() }
+      new PrintWriter(timeWriteNameMB) { write(timeStringMB); close() }
       
+      // Write Sample-Based Results
+      val errWriteNameSB = dirSampleBased + subdirErr + s"relative_error_$sampleSize.json"
+      val timeWriteNameSB = dirSampleBased + subdirTime + s"response_time_$sampleSize.json"
+      new PrintWriter(errWriteNameSB) { write(errStringSB); close() }
+      new PrintWriter(timeWriteNameSB) { write(timeStringSB); close() }
+      
+      logger.info("errStringMB: " + errStringMB)
+      logger.info("timeStringMB: " + timeStringMB)
+      logger.info("errStringSB: " + errStringSB)
+      logger.info("timeStringSB: " + timeStringSB)
     }
+    client.close()
   }
 }
