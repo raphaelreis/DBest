@@ -14,4 +14,5 @@ class Settings(config: Config) {
     val numberOfCores = config.getDouble("app.numberOfCores")
     val modelType = config.getString("app.modelType")
     val crossValNumFolds = config.getInt("app.crossValNumFolds")
+    val numWorkers = config.getInt("app.numWorkers")
 }

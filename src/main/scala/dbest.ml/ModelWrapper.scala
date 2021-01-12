@@ -87,10 +87,12 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
             //load or fit regression 
             if (mio.exists(reg)) {
                 logger.info("regression model exists and is loaded")
-                reg = mio.readModel(reg)
+                
+                reg = if(settings.modelType == "linear") mio.readModel(reg).asInstanceOf[LinearRegressor] 
+                        else mio.readModel(reg).asInstanceOf[DBEstXGBoostRegressor]
             } else {
                 logger.info("regression does not exists and will be fit")
-                reg.crossValidate(df, settings.crossValNumFolds)
+                reg.crossValidate(df, settings.crossValNumFolds, settings.numWorkers)
                 mio.writeModel(reg)
             }
         }

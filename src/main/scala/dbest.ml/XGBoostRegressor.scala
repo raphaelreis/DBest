@@ -31,10 +31,6 @@ class DBEstXGBoostRegressor extends DBEstRegressor with DBEstModel {
     estimator.fit(traingSet)
   }
 
-  def crossValidate(trainingSet: DataFrame, numFolds: Int) = {
-    crossValidate(trainingSet, numFolds, 4)
-  }
-
   def crossValidate(trainingSet: DataFrame, numFolds: Int, numWorkers: Int) = {
     val xgbRegressor  = new XGBoostRegressor(xgbParam)
       .setFeaturesCol("features")

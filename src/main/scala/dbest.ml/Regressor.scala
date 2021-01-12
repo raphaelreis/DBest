@@ -8,7 +8,7 @@ import org.apache.spark.ml.tuning.CrossValidatorModel
 abstract class DBEstRegressor extends DBEstModel {
   var cvModel: CrossValidatorModel = _
   def fit(traingSet: DataFrame): PipelineModel
-  def crossValidate(traingSet: DataFrame, numFolds: Int): CrossValidatorModel
+  def crossValidate(traingSet: DataFrame, numFolds: Int, numWorkers: Int): CrossValidatorModel
   def save(path: String) {
     cvModel.save(path)
   }

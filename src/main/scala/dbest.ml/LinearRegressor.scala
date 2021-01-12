@@ -51,7 +51,7 @@ class LinearRegressor extends DBEstRegressor with DBEstModel {
         estimator.fit(traingSet)
     }
 
-    def crossValidate(trainingSet: DataFrame, numFolds: Int): CrossValidatorModel = {
+    def crossValidate(trainingSet: DataFrame, numFolds: Int, numWorkers: Int): CrossValidatorModel = {
         val lr  = new LinearRegression()
             .setFeaturesCol("features")
             .setLabelCol("label")
