@@ -1,6 +1,6 @@
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.log4j.{Level, Logger}
-import ml.LinearRegressor
+import dbest.ml.LinearRegressor
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{rand, randn}
 import org.apache.spark.ml.feature.VectorAssembler

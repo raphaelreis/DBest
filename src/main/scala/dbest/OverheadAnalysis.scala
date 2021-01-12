@@ -8,7 +8,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import settings.Settings
 import scala.collection.mutable.Map
-import ml.ModelWrapper
+import dbest.ml.ModelWrapper
 import better.files._
 import client._
 

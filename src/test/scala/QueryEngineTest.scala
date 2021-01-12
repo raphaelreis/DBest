@@ -1,7 +1,7 @@
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
-import ml.GroupByModelWrapper
+import dbest.ml.GroupByModelWrapper
 import org.apache.spark.sql.{functions=>F}
 import scala.collection.mutable.Map
 

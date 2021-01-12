@@ -1,4 +1,4 @@
-package ml
+package dbest.ml
 
 import org.apache.spark.mllib.stat.KernelDensity
 import org.apache.spark.sql._
@@ -66,7 +66,7 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
             }
         }
     }
-
+ 
     def fitOrLoad(aggFun: String, df: DataFrame, x: Array[String], y: String, trainingFrac: Double) {
         
         val densityEvaluationSpacing = settings.densitiyInterspacEvaluation
