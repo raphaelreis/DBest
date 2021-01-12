@@ -12,4 +12,6 @@ class Settings(config: Config) {
     val densitiyInterspacEvaluation = config.getDouble("app.densitiyInterspacEvaluation")
     val defaultKernelBandWidth = config.getDouble("app.defaultKernelBandWidth")
     val numberOfCores = config.getDouble("app.numberOfCores")
+    val modelType = config.getString("app.modelType")
+    val crossValNumFolds = config.getInt("app.crossValNumFolds")
 }

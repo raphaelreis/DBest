@@ -127,7 +127,6 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
                                         .filter {case (x: Double, va: Double) => x >= xMin && x <= xMax}
                                         .map(_._2)
 
-
         if (selectedDensity.length < 5) {
                 selectedDensity = (ls zip density)
                             .filter {case (x: Double, va: Double) => x >= xMin - 0.5 && x <= xMax + 0.5}

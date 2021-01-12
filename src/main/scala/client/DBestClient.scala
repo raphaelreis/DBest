@@ -7,7 +7,7 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.{functions => F}
 import org.apache.spark.mllib.stat.KernelDensity
-import ml._
+import dbest.ml.ModelWrapper
 import engine._
 import DataLoader._
 import org.apache.spark.ml.regression.LinearRegressionModel

@@ -15,24 +15,18 @@ import scala.io._
 import Sampler.Sampler._
 import settings.Settings
 import traits.Analyser
+import org.apache.spark.ml.tuning.CrossValidatorModel
 
 class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String, Double], var dfMaxs: Map[String, Double]) extends Analyser {
 
     private val logger = Logger.getLogger(this.getClass().getName())
-    private var reg = new LinearRegressor()
+    private var reg = if(settings.modelType == "linear") new LinearRegressor() else new DBEstXGBoostRegressor()
     private var kde = new SparkKernelDensity(settings.defaultKernelBandWidth)
     private var densities = Map[String, Array[Double]]()
 
     def getRegModel() = reg
     def getKdeModel() = kde
     def getDensities() = densities
-
-    def fitReg(df: DataFrame) = {
-        reg.fit(df)
-    }
-    def fitReg(df: DataFrame, x: Array[String], y: String) = {
-        reg.fit(df, x, y)
-    }
 
     def fitDensity(df: DataFrame, x: Array[String]) = {
         kde.fit(df, x)
@@ -93,10 +87,10 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
             //load or fit regression 
             if (mio.exists(reg)) {
                 logger.info("regression model exists and is loaded")
-                reg = mio.readModel(reg).asInstanceOf[LinearRegressor]
+                reg = mio.readModel(reg)
             } else {
                 logger.info("regression does not exists and will be fit")
-                fitReg(df)
+                reg.crossValidate(df, settings.crossValNumFolds)
                 mio.writeModel(reg)
             }
         }
