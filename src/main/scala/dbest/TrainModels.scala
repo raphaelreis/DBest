@@ -1,17 +1,18 @@
 package dbest
 
-import java.io.{File => JFile, PrintWriter}
-import play.api.libs.json.Json
-import play.api.libs.json.JsValue
+import better.files._
 import org.apache.log4j.Logger
+import play.api.libs.json.Json
 import com.typesafe.config.ConfigFactory
+import java.io.{File => JFile, PrintWriter}
 import com.typesafe.config.ConfigValueFactory
-import settings.Settings
 import scala.collection.mutable.Map
 import dbest.ml.ModelWrapper
-import better.files._
-import client._
-import dbest.dataprocessor._
+
+import settings.Settings
+import client.DBestClient
+import dbest.dataprocessor.DataProcessor
+
 
 object TrainModels {
   def main(args: Array[String]) {
@@ -23,8 +24,8 @@ object TrainModels {
     val settings = new Settings(conf)
 
     // Training sample size
-    val sampleSize = List(1.0)
-    // val sampleSize = List(0.001)
+    // val sampleSize = List(0.001, 0.01, 0.1, 0.5, 1.0)
+    val sampleSize = List(0.5, 1.0)
 
     // Init training
     val client = new DBestClient(settings, appName)

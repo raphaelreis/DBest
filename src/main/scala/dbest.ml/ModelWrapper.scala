@@ -1,21 +1,20 @@
 package dbest.ml
 
-import org.apache.spark.mllib.stat.KernelDensity
-import org.apache.spark.sql._
-import org.apache.log4j.{Level, Logger}
-import org.apache.spark.ml.regression.LinearRegression
-import scala.collection.mutable.Map
+import scala.io.Source
+import breeze.linalg.linspace
+import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
+import java.nio.file.{Paths, Files}
+import scala.collection.mutable.Map
+import org.apache.spark.sql.DataFrame
+
 import tools._
+import traits.Analyser
+import settings.Settings
+import sampler.Sampler.uniformSampling
 import tools.fileWriter.writeFile
 import tools.makeDensityFileName.makeDensityFileName
-import breeze.linalg._
-import java.nio.file.{Paths, Files}
-import scala.io._
-import sampler.Sampler._
-import settings.Settings
-import traits.Analyser
-import org.apache.spark.ml.tuning.CrossValidatorModel
+
 
 class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String, Double], var dfMaxs: Map[String, Double]) extends Analyser {
 

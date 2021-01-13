@@ -1,9 +1,10 @@
 package dbest.ml
 
-import traits.DBEstModel
-import org.apache.spark.ml.{Model, Pipeline, PipelineModel}
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.tuning.CrossValidatorModel
+
+import traits.DBEstModel
 
 abstract class DBEstRegressor extends DBEstModel {
   var cvModel: CrossValidatorModel = _

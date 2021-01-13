@@ -1,11 +1,9 @@
 
 import org.apache.log4j.Logger
-import dbest.ml.DBEstXGBoostRegressor
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.{functions=>F}
-import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.scalatest.funsuite.AnyFunSuite
+import org.apache.spark.sql.{SparkSession, functions=>F}
 
+import dbest.ml.DBEstXGBoostRegressor
 
 class XGBoostRegressorTest extends AnyFunSuite {
   val logger = Logger.getLogger(this.getClass().getName())

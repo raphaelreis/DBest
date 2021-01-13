@@ -1,7 +1,10 @@
-import org.scalatest.funsuite.AnyFunSuite
+
+import org.apache.log4j.Logger
 import org.apache.spark.sql.SparkSession
-import org.apache.log4j.{Level, Logger}
+import org.scalatest.funsuite.AnyFunSuite
+
 import sampler.Sampler._
+
 
 class SamplerTest extends AnyFunSuite {
     val logger = Logger.getLogger(this.getClass().getName())

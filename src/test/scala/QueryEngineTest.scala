@@ -1,9 +1,11 @@
-import org.scalatest.funsuite.AnyFunSuite
-import org.apache.spark.sql.SparkSession
-import org.apache.log4j.{Level, Logger}
-import dbest.ml.GroupByModelWrapper
-import org.apache.spark.sql.{functions=>F}
+
+import org.apache.log4j.Logger
 import scala.collection.mutable.Map
+import org.scalatest.funsuite.AnyFunSuite
+import org.apache.spark.sql.{SparkSession, functions=>F}
+
+import dbest.ml.GroupByModelWrapper
+
 
 class QueryEngineTest extends AnyFunSuite {
     val logger = Logger.getLogger(this.getClass().getName())

@@ -1,12 +1,12 @@
 package dbest.dataprocessor
 
-import org.apache.spark.sql._
-import org.apache.spark.sql.types._
-import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.ml.Pipeline
 import scala.collection.mutable.Map
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.IntegerType
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.sql.types.{DoubleType, IntegerType}
+
 
 class DataProcessor(dataFrame: DataFrame, features: Array[String], label: String) {
 

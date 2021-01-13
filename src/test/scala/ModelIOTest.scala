@@ -1,16 +1,17 @@
-import dbest.ml._
-import dbest.dataprocessor.DataProcessor
+
 import java.io.File
-import settings.Settings
-import client.DBestClient
-import java.nio.file.{Paths, Files}
-import org.apache.log4j.{Level, Logger}
+import org.apache.log4j.Logger
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
-import org.apache.spark.sql._
-import org.apache.spark.sql.{functions=>F}
 import org.apache.spark.sql.types.DoubleType
+import org.apache.spark.sql.{SparkSession, functions=>F}
 import org.apache.spark.ml.evaluation.RegressionEvaluator
+
+import settings.Settings
+import client.DBestClient
+import dbest.dataprocessor.DataProcessor
+import dbest.ml.{ModelIO, DBEstXGBoostRegressor}
+
 
 
 class ModelIOTest extends AnyFunSuite {
@@ -20,8 +21,6 @@ class ModelIOTest extends AnyFunSuite {
     val confFileName = "conf/application.conf"
     val conf = ConfigFactory.parseFile(new File(confFileName)).resolve()
     val settings = new Settings(conf)
-
-    
 
     test("ModelIO test model writting/reading regressor") {
         // Initialization

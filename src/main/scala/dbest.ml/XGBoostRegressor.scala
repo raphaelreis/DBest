@@ -1,13 +1,13 @@
 package dbest.ml
 
-import traits.DBEstModel
 import org.apache.log4j.Logger
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.PipelineModel
-import org.apache.spark.sql.DataFrame
 import org.apache.spark.ml.tuning.{ParamGridBuilder, CrossValidator}
-import org.apache.spark.ml.evaluation.RegressionEvaluator
 import ml.dmlc.xgboost4j.scala.spark.XGBoostRegressor
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.ml.{Pipeline, PipelineModel}
+import org.apache.spark.ml.evaluation.RegressionEvaluator
+
+import traits.DBEstModel
 
 class DBEstXGBoostRegressor extends DBEstRegressor with DBEstModel {
   private val logger = Logger.getLogger(this.getClass().getName())
@@ -39,7 +39,7 @@ class DBEstXGBoostRegressor extends DBEstRegressor with DBEstModel {
 
     val paramGrid = new ParamGridBuilder()
       .addGrid(xgbRegressor.maxDepth, Array(2, 4))
-      .addGrid(xgbRegressor.eta,  Array(0.3))
+      .addGrid(xgbRegressor.eta,  Array(0.3, 0.2))
       .addGrid(xgbRegressor.numRound, Array(2, 3))
       .build()
  

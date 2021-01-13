@@ -1,17 +1,17 @@
 package dbest.ml
 
-import tools.hasColumn
-import traits.DBEstModel
-import org.apache.log4j.{Level, Logger}
+import org.apache.log4j.Logger
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.{Pipeline, PipelineModel}
-import org.apache.spark.ml.tuning.CrossValidatorModel
-import org.apache.spark.ml.regression.{LinearRegression, LinearRegressionModel}
-import org.apache.spark.sql.DataFrameReader
 import org.apache.spark.ml.tuning.CrossValidator
-import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.tuning.ParamGridBuilder
+import org.apache.spark.ml.tuning.CrossValidatorModel
+import org.apache.spark.ml.regression.LinearRegression
+import org.apache.spark.ml.evaluation.RegressionEvaluator
+
+import tools.hasColumn
+import traits.DBEstModel
 
 class LinearRegressor extends DBEstRegressor with DBEstModel {
     private val logger = Logger.getLogger(this.getClass().getName())

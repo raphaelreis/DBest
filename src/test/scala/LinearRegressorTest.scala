@@ -1,11 +1,10 @@
+import org.apache.log4j.Logger
 import org.scalatest.funsuite.AnyFunSuite
-import org.apache.log4j.{Level, Logger}
-import dbest.ml.LinearRegressor
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{rand, randn}
-import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.ml.{Pipeline, PipelineModel}
-import org.apache.spark.ml.regression.{LinearRegression, LinearRegressionModel}
+
+import dbest.ml.LinearRegressor
+
 
 class LinearRegressorTest extends AnyFunSuite {
   val logger = Logger.getLogger(this.getClass().getName())

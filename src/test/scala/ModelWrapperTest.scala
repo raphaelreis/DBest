@@ -1,15 +1,16 @@
-import org.scalatest.funsuite.AnyFunSuite
-import org.apache.spark.sql.SparkSession
-import org.apache.log4j.{Level, Logger}
-import dbest.ml.GroupByModelWrapper
-import dbest.ml.ModelWrapper
-import org.apache.spark.sql.functions.{rand, randn}
-import dbest.dataprocessor.DataProcessor
-import settings.Settings
-import com.typesafe.config.ConfigFactory
+
 import java.io.File
-import org.apache.spark.sql.{functions=>F}
+import org.apache.log4j.Logger
 import scala.collection.mutable.Map
+import com.typesafe.config.ConfigFactory
+import org.scalatest.funsuite.AnyFunSuite
+import org.apache.spark.sql.{SparkSession, functions=>F}
+
+import settings.Settings
+import dbest.ml.ModelWrapper
+import dbest.ml.GroupByModelWrapper
+import dbest.dataprocessor.DataProcessor
+
 
 class ModelWrapperTest extends AnyFunSuite {
     val logger = Logger.getLogger(this.getClass().getName())
@@ -25,7 +26,7 @@ class ModelWrapperTest extends AnyFunSuite {
 
     test("ModelWrapper test saveDensities method") {
         val idx = spark.sqlContext.range(0, 100)
-        val randomDf = idx.select("id").withColumn("uniform", rand(42))
+        val randomDf = idx.select("id").withColumn("uniform", F.rand(42))
 
         val features = Array("uniform")
 
@@ -45,7 +46,7 @@ class ModelWrapperTest extends AnyFunSuite {
 
     test("ModelWrapper test fitOrLoad method") {
         val idx = spark.sqlContext.range(0, 100)
-        val randomDf = idx.select("id").withColumn("uniform1", rand(42)).withColumn("uniform2", rand(42)).withColumn("uniform3", rand(42))
+        val randomDf = idx.select("id").withColumn("uniform1", F.rand(42)).withColumn("uniform2", F.rand(42)).withColumn("uniform3", F.rand(42))
         
         val features = Array("uniform1", "uniform2")
         val label = "uniform3"

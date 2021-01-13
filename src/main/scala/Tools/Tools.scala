@@ -1,11 +1,13 @@
 package tools
 
-import traits.DBEstModel
-import scala.util.Try
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types._
-import java.io._
 import math.round
+import scala.util.Try
+// import org.apache.spark.sql.types
+import org.apache.spark.sql.DataFrame
+import java.io.{File, FileWriter, BufferedWriter}
+
+import traits.DBEstModel
+
 
 object makeFileName {
     def makeFileName(dir: String, df: DataFrame,  model: DBEstModel, x: Array[String], y: String, trainingFrac: Double): String = {

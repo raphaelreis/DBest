@@ -1,26 +1,20 @@
 package engine
 
-import breeze.integrate._
+import org.apache.log4j.Logger
 import scala.math.exp
-import org.apache.spark.mllib.stat.KernelDensity
+import scala.collection.mutable.Map
 import breeze.linalg.linspace
-import breeze.integrate.trapezoid
-import scala.collection.mutable.Stack
-import org.apache.spark.ml.regression.LinearRegressionModel
-import org.apache.spark.sql._
-import org.apache.spark.sql.{functions => F} 
-import org.apache.spark.sql.SparkSession
+import breeze.integrate.{trapezoid, simpson}
+import org.apache.spark.mllib.stat.KernelDensity
 import org.apache.spark.ml.feature.VectorAssembler
-import dbest.ml.SparkKernelDensity
+import org.apache.spark.ml.regression.LinearRegressionModel
+import org.apache.spark.sql.{SparkSession, DataFrame, functions => F} 
+
+import traits.Analyser
+import dbest.ml.ModelWrapper
 import dbest.ml.LinearRegressor
 import dbest.ml.GroupByModelWrapper
-import org.apache.spark.rdd.RDD
-import org.apache.log4j.{Level, Logger}
-import dbest.ml.ModelWrapper
-import traits.Analyser
-import scala.collection.mutable.Map
-import sampler.Sampler._
-
+import sampler.Sampler.uniformSampling
 
 class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String, Double], var dfMaxs: Map[String, Double]) extends Analyser {
     val logger = Logger.getLogger(this.getClass().getName())

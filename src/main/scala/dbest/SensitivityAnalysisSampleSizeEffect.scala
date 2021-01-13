@@ -1,13 +1,14 @@
 package dbest
 
-import java.io._
-import play.api.libs.json.Json
-import play.api.libs.json.JsValue
 import org.apache.log4j.Logger
-import com.typesafe.config.ConfigFactory
-import settings.Settings
+import play.api.libs.json.Json
+import java.io.{File, PrintWriter}
 import scala.collection.mutable.Map
-import client._
+import com.typesafe.config.ConfigFactory
+
+import settings.Settings
+import client.DBestClient
+
 
 object SensitivityAnalysisSampleSizeEffect {
   def main(args: Array[String]) {
@@ -40,7 +41,7 @@ object SensitivityAnalysisSampleSizeEffect {
   // load queries
     val fileName = "experiments/sensitivity_analysis_sampleSize_queries.json"
     val jsonContent = scala.io.Source.fromFile(fileName).mkString
-    val json: JsValue = Json.parse(jsonContent)
+    val json = Json.parse(jsonContent)
 
     val client: DBestClient = new DBestClient(settings, appName)
     // var path = if(args.length == 1) System.getProperty("user.dir") + "/" + args(0) else ""

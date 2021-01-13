@@ -1,12 +1,12 @@
 package dbest.ml
 
-import org.apache.spark.mllib.stat.KernelDensity;
-import org.apache.spark.sql.SparkSession;
+import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql._
 import org.apache.spark.SparkContext
+import org.apache.spark.mllib.stat.KernelDensity
+import org.apache.spark.sql.{SparkSession, DataFrame, Row}
+
 import traits.DBEstModel
-import org.apache.log4j.{Level, Logger}
 
 
 class SparkKernelDensity(bandWidth: Double = 1.0) extends DBEstModel {

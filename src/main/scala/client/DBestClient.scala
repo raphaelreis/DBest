@@ -1,22 +1,17 @@
 package client
 
-import org.apache.spark.sql.SparkSession
+import org.apache.log4j.Logger
 import java.nio.file.{Paths, Files}
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.{functions => F}
-import org.apache.spark.mllib.stat.KernelDensity
-import dbest.ml.ModelWrapper
-import engine._
-import org.apache.spark.ml.regression.LinearRegressionModel
-import javassist.NotFoundException
 import java.io.FileNotFoundException
-import sampler.Sampler._
-import settings.Settings
 import scala.collection.mutable.Map
-import traits.Analyser
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.types.DoubleType
+import org.apache.spark.sql.{SparkSession, DataFrame, functions => F}
+
+import traits.Analyser
+import settings.Settings
+import engine.QueryEngine
+import dbest.ml.ModelWrapper
 
 class DBestClient (settings: Settings, appName: String = "DBEst Client") extends Analyser {
   val logger = Logger.getLogger(this.getClass().getName())
