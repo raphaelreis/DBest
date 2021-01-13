@@ -1,0 +1,14 @@
+basedir : "/whateverthepath/toyour/workingdirectory"
+
+app {
+    hdfsAvailable : false
+    densitiesPath : ${basedir}"models/densities/"
+    regressionPath : ${basedir}"models/regressions/"
+    resultsFolder : ${basedir}"results/local_results/"
+    densitiyInterspacEvaluation : 0.2
+    defaultKernelBandWidth : 3
+    numberOfCores : 4
+    modelType : linear
+    crossValNumFolds : 2
+    numWorkers : 4
+}
