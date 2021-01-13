@@ -35,7 +35,7 @@ class QueryEngineTest extends AnyFunSuite {
         val numberDataPoints = groupByDf.count().toInt
         val groupValuesCount = groupByDf.select(groupColumn).groupBy(groupColumn).count.rdd.map(r => (r.get(0), r.getLong(1).toInt)).collect()
 
-        val dp = new dbest.dataprocessor.dbest.dataprocessor(groupByDf, features, label)
+        val dp = new dbest.dataprocessor.DataProcessor(groupByDf, features, label)
         dp.processForRegression()
         dp.processForGroupByDensity(groupColumn)
 

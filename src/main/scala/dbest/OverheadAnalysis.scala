@@ -14,12 +14,7 @@ import client._
 
 object OverheadAnalysis {
   def main(args: Array[String]): Unit = {
-    // Results directories
-    val dir = "results/overhead_analysis/"
-    val subdirSpace = "space_overhead/"
-    val subdirTime = "training_time/"
-
-    // Init settings and logger
+  // Init settings and logger
     val appName = "Overhead Analysis"
     val logger = Logger.getLogger(this.getClass().getName())
     val confFileName = "conf/application.conf"
@@ -29,10 +24,19 @@ object OverheadAnalysis {
     val conf = newDensityPathConfig.withFallback(newRegressionPathConfig).withFallback(oldConf).resolve()             
     val settings = new Settings(conf)
 
-    // Experiment parameters
+  // Results directories
+    val dir = settings.resultsFolder + "overhead_analysis/"
+    val subdirSpace = dir + "space_overhead/"
+    val subdirTime = dir + "training_time/"
+    val timeFileName = "time_vs_sample_size.json"
+    val spaceFileName = "space_overhead_vs_sample_size.json"
+    val timePath = subdirTime + timeFileName
+    val spacePath = subdirSpace + spaceFileName
+
+  // Experiment parameters
     val sampleSize = List(0.001, 0.01, 0.1, 0.5, 1.0)
     
-    // Experiment initialization
+  // Experiment initialization
     val client = new DBestClient(settings, appName)
     var path = if(args.length == 1) System.getProperty("user.dir") + "/" + args(0) else ""
     var tableName = ""
@@ -53,18 +57,18 @@ object OverheadAnalysis {
     var dfMins = client.dfMins
     var dfMaxs = client.dfMaxs
 
-    // Dataframe processing
+  // Dataframe processing
     val dp = new dbest.dataprocessor.DataProcessor(df, features, label)
     val processedDf = dp.processForRegression().getPreprocessedDF()
 
-    // Experiment
+  // Experiment
     val spaceMap = Map[String, Long]()
     val timeMap = Map[String, Long]()
     sampleSize.foreach { ss =>
       spaceMap += ss.toString -> 0L; timeMap += ss.toString -> 0L
     }
-    val densitiesDir = settings.dpath.toFile
-    val regressionsDir = settings.rpath.toFile
+    val densitiesDir = (settings.dpath).toFile
+    val regressionsDir = (settings.rpath).toFile
 
     for (trainingFrac <- sampleSize) {
       densitiesDir.clear()
@@ -78,13 +82,15 @@ object OverheadAnalysis {
       spaceMap += trainingFrac.toString() -> (densitiesDir.size() + regressionsDir.size())
     }
 
-    val timeString = Json.stringify(Json.toJson(timeMap))
-    val spaceString = Json.stringify(Json.toJson(spaceMap))
 
-    val timeWriteName = dir + subdirTime + s"time_vs_sample_size.json"
-    val spaceWriteName = dir + subdirSpace + s"space_overhead_vs_sample_size.json"
-    new PrintWriter(timeWriteName) { write(timeString); close() }
-    new PrintWriter(spaceWriteName) { write(spaceString); close() } 
+    val finalTimeMap = timeMap.mapValues(v => if(v.isInfinity) Double.MinValue else v)
+    val finalSpaceMap = spaceMap.mapValues(v => if(v.isInfinity) Double.MinValue else v)
+    val timeString = Json.stringify(Json.toJson(finalTimeMap))
+    val spaceString = Json.stringify(Json.toJson(finalSpaceMap))
+
+
+    new PrintWriter(timePath) { write(timeString); close() }
+    new PrintWriter(spacePath) { write(spaceString); close() } 
     
     logger.info("timeString: " + timeString)
     logger.info("spaceString: " + spaceString)

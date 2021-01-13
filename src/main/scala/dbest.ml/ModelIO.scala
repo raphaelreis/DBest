@@ -22,13 +22,13 @@ class ModelIO(dir: String, df: DataFrame, x: Array[String], y: String, trainingF
     }
 
     def writeModel(model: DBEstRegressor) {
-        val fileName = makeFileName(dir, df, model, x, y, trainingFrac)
-        model.save(fileName)
+        val filePath = makeFileName(dir, df, model, x, y, trainingFrac)
+        model.save("file:///" + filePath)
     }
     
     def readModel(model: DBEstRegressor) = {
-        val fileName = makeFileName(dir, df, model, x, y, trainingFrac)
-        model.read(fileName)
+        val filePath = makeFileName(dir, df, model, x, y, trainingFrac)
+        model.read("file:///" + filePath)
         model
     }
 }

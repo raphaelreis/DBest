@@ -13,6 +13,9 @@ class Settings(config: Config) {
     val defaultKernelBandWidth = config.getDouble("app.defaultKernelBandWidth")
     val numberOfCores = config.getDouble("app.numberOfCores")
     val modelType = config.getString("app.modelType")
-    val crossValNumFolds = config.getInt("app.crossValNumFolds")
+    val crossValNumFolds = if(config.getInt("app.crossValNumFolds") > 1) config.getInt("app.crossValNumFolds")
+        else throw new RuntimeException("Wrong configuration crossValNumFolds value; must be > 1")
     val numWorkers = config.getInt("app.numWorkers")
+    def printVars = this.getClass.getDeclaredFields.foreach{v=>v.setAccessible(true); println("Field: " + v.getName() + " => " + v.get(this))}
+
 }

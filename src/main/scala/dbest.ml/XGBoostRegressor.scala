@@ -38,8 +38,8 @@ class DBEstXGBoostRegressor extends DBEstRegressor with DBEstModel {
 
     val paramGrid = new ParamGridBuilder()
       .addGrid(xgbRegressor.maxDepth, Array(2, 4, 6))
-      .addGrid(xgbRegressor.eta,  Array(0.3, 0.2, 0.1, 0.05, 0.01, 0.005))
-      .addGrid(xgbRegressor.numRound, Array(2, 4, 6, 8, 10))
+      .addGrid(xgbRegressor.eta,  Array(0.3, 0.2, 0.1))
+      .addGrid(xgbRegressor.numRound, Array(2, 3, 4))
       .build()
  
     val evaluator = new RegressionEvaluator()

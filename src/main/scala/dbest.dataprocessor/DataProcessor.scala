@@ -30,14 +30,14 @@ class DataProcessor(dataFrame: DataFrame, features: Array[String], label: String
       *
       * @return the DataPreprocessor object
       */
-    def processForRegression(): dbest.dataprocessor = {
+    def processForRegression(): DataProcessor = {
         assemble()
         df = df.withColumn("label", df.col(label))
         regressionProcessed = true 
         this
     }
 
-    def processForDensity(): dbest.dataprocessor = {
+    def processForDensity(): DataProcessor = {
         val selectedDF = dataFrame.select(features.head, features.tail: _*)
         for (i <- 0 to features.length-1){
             mapRDD += features(i) -> selectedDF.rdd.map(r => r.getDouble(i))
@@ -46,7 +46,7 @@ class DataProcessor(dataFrame: DataFrame, features: Array[String], label: String
         this
     }
 
-    def processForGroupByDensity(groupColumn: String): dbest.dataprocessor = {
+    def processForGroupByDensity(groupColumn: String): DataProcessor = {
         val selectedDF = dataFrame.select(groupColumn, features: _*)
 
         val groupByType = selectedDF.select(groupColumn).schema.fields(0).dataType match {

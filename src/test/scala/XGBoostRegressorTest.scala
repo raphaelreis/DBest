@@ -23,7 +23,7 @@ class XGBoostRegressorTest extends AnyFunSuite {
     val features = Array("uniform")
     val label = "label"
 
-    val dp = new DataProcessor.DataProcessor(df, features, label)
+    val dp = new dbest.dataprocessor.DataProcessor(df, features, label)
     val Array(split20, split80) = dp.processForRegression().getPreprocessedDF().randomSplit(Array(0.20, 0.80), 1800009193L)
     val testSet = split20.cache()
     val trainingSet = split80.cache()
@@ -54,13 +54,13 @@ class XGBoostRegressorTest extends AnyFunSuite {
     val features = Array("uniform")
     val label = "label"
 
-    val dp = new DataProcessor.DataProcessor(df, features, label)
+    val dp = new dbest.dataprocessor.DataProcessor(df, features, label)
     val Array(split20, split80) = dp.processForRegression().getPreprocessedDF().randomSplit(Array(0.20, 0.80), 1800009193L)
     val testSet = split20.cache()
     val trainingSet = split80.cache()
 
     val xgboostRegressor = new DBEstXGBoostRegressor
-    val xgbRegressionModel = xgboostRegressor.crossValidate(trainingSet, 2)
+    val xgbRegressionModel = xgboostRegressor.crossValidate(trainingSet, 2, 4)
     
     val predictions = xgbRegressionModel.transform(testSet)
     predictions.select("label","prediction").show()

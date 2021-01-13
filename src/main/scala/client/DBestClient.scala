@@ -69,6 +69,7 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
       df = tmpDf.withColumn("ss_wholesale_cost", F.col("_c11").cast(DoubleType))
               .withColumn("ss_list_price", F.col("_c12").cast(DoubleType))
               .select("ss_list_price", "ss_wholesale_cost")
+              .na.drop()
               .cache()
       ///
       df.createOrReplaceTempView(tableName)
