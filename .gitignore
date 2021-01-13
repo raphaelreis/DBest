@@ -9,3 +9,7 @@ results/
 metastore_db/
 tmp/
 models/
+src/main/python/App_dev.ipynb
+scripts/download_results.sh
+lib/
+conf/application.conf
