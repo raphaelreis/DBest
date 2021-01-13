@@ -145,7 +145,7 @@ class GroupByModelWrapper(kernelBandeWidth: Double = 3.0) {
         }
     }
 
-    def fit(dp: DataProcessor.DataProcessor, groupColumn: String) = {
+    def fit(dp: dbest.dataprocessor.DataProcessor, groupColumn: String) = {
         val processedDF = dp.getPreprocessedDF()
         val groupByMapRDD = dp.getGroupByMapRDD()
         fitRegs(processedDF, groupColumn)

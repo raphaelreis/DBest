@@ -150,7 +150,7 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
     }
     case "sum" => {
       // Dataframe processing
-      val dp = new DataProcessor.DataProcessor(df, features, label)
+      val dp = new dbest.dataprocessor.DataProcessor(df, features, label)
       val processedDf = dp.processForRegression().getPreprocessedDF()
 
       // Model fitting
@@ -167,7 +167,7 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
       val y = label
 
       // Dataframe processing
-      val dp = new DataProcessor.DataProcessor(df, x, y)
+      val dp = new dbest.dataprocessor.DataProcessor(df, x, y)
       val processedDf = dp.processForRegression().getPreprocessedDF()
 
       // Model fitting

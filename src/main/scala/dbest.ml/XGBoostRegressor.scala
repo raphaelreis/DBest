@@ -10,7 +10,6 @@ import org.apache.spark.ml.evaluation.RegressionEvaluator
 import ml.dmlc.xgboost4j.scala.spark.XGBoostRegressor
 
 class DBEstXGBoostRegressor extends DBEstRegressor with DBEstModel {
-
   private val logger = Logger.getLogger(this.getClass().getName())
   val name = "xgboost_regressor"
   

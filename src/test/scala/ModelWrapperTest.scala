@@ -4,7 +4,7 @@ import org.apache.log4j.{Level, Logger}
 import dbest.ml.GroupByModelWrapper
 import dbest.ml.ModelWrapper
 import org.apache.spark.sql.functions.{rand, randn}
-import DataProcessor.DataProcessor
+import dbest.dataprocessor.dbest.dataprocessor
 import settings.Settings
 import com.typesafe.config.ConfigFactory
 import java.io.File
@@ -49,7 +49,7 @@ class ModelWrapperTest extends AnyFunSuite {
         
         val features = Array("uniform1", "uniform2")
         val label = "uniform3"
-        val dp = new DataProcessor(randomDf, features, label)
+        val dp = new dbest.dataprocessor(randomDf, features, label)
         dp.processForRegression()
         val df = dp.getPreprocessedDF()
 
@@ -89,7 +89,7 @@ class ModelWrapperTest extends AnyFunSuite {
         val label = "col3"
 
         
-        val dp = new DataProcessor.DataProcessor(groupByDf, features, label)
+        val dp = new dbest.dataprocessor.dbest.dataprocessor(groupByDf, features, label)
         dp.processForRegression()
         dp.processForGroupByDensity(groupColumn)
 

@@ -23,12 +23,12 @@ class DataProcessorTest extends AnyFunSuite {
         )
         .toDF("col1", "col2", "col3")
         
-    // test("DataProcessor test processForRegression") {
+    // test("dbest.dataprocessor test processForRegression") {
         
     //     val features = Array("col1", "col2")
     //     val label = "col3"
 
-    //     val dp = new DataProcessor.DataProcessor(df, features, label)
+    //     val dp = new dbest.dataprocessor.dbest.dataprocessor(df, features, label)
     //     dp.processForRegression()
     //     val preprocessedData: org.apache.spark.sql.DataFrame = dp.getPreprocessedDF()
 
@@ -38,12 +38,12 @@ class DataProcessorTest extends AnyFunSuite {
     //     assert(hasColumn(preprocessedData, "label"))
     // }
 
-    // test("DataProcessor test processForDensity") {
+    // test("dbest.dataprocessor test processForDensity") {
         
     //     val features = Array("col2")
     //     val label = "col3"
 
-    //     val dp = new DataProcessor.DataProcessor(df, features, label)
+    //     val dp = new dbest.dataprocessor.dbest.dataprocessor(df, features, label)
     //     dp.processForDensity()
     //     val mapRDD: mutable.Map[String, RDD[Double]] = dp.getMapRDD()
 

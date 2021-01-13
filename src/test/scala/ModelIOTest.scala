@@ -1,128 +1,49 @@
-import org.scalatest.funsuite.AnyFunSuite
-import org.apache.spark.sql._
-import org.apache.log4j.{Level, Logger}
-import client.DBestClient
 import dbest.ml._
 import DataLoader._
-import java.nio.file.{Paths, Files}
 import java.io.File
-import org.apache.spark.ml.regression.LinearRegressionModel
+import settings.Settings
+import client.DBestClient
+import java.nio.file.{Paths, Files}
+import org.apache.log4j.{Level, Logger}
+import com.typesafe.config.ConfigFactory
+import org.scalatest.funsuite.AnyFunSuite
+import org.apache.spark.sql._
+import org.apache.spark.sql.{functions=>F}
+import org.apache.spark.sql.types.DoubleType
 
 
 class ModelIOTest extends AnyFunSuite {
+    // Init settings and logger
+    val appName = "ModelIO test"
     val logger = Logger.getLogger(this.getClass().getName())
+    val confFileName = "conf/application.conf"
+    val conf = ConfigFactory.parseFile(new File(confFileName)).resolve()
+    val settings = new Settings(conf)
 
-    val spark: SparkSession = SparkSession
-        .builder
-        .master("local")
-        .appName("ModelIO test")
-        .getOrCreate()
+    
 
-    val dload = new DataLoader
+    test("ModelIO test model writting xgboost regressor") {
+        val spark = SparkSession.builder()
+            .master("local[*]")
+            .getOrCreate()
+        val df = spark.read
+            .option("delimiter", "|")
+            .csv(settings.baseDir + "data/store_sales_sample.dat")
+            .withColumn("ss_wholesale_cost", F.col("_c11").cast(DoubleType))
+            .withColumn("ss_list_price", F.col("_c12").cast(DoubleType))
+            .select("ss_list_price", "ss_wholesale_cost")
+            .cache()
 
-    val root = ""
-    val fileName = "data/store_sales_sample.dat"
-    val table = root + fileName
-    var df: DataFrame = _
+        val features = Array("ss_list_price")
+        val label = "ss_wholesale_cost"
+        val dp = new dbest.dataprocessor()
 
-    if (Files.exists(Paths.get(table))) {
-        // df = dload.loadTable(table)
-    } else {
-        throw new Exception("Table does not exist.")
+        val model = new DBEstXGBoostRegressor()
+
+        val dp = new dbest.dataprocessor.DataProcessor()
+        
+        spark.close()
     }
-   
-    // test("ModelIO.writeModel for LinearRegressor") {
-        
-    //     val x = Array("_c13")
-    //     val y = "_c20"
-        
-    //     val lr = new LinearRegressor()
-    //     val model = lr.fit(df, x, y)
-    //     val mio = new ModelIO(lr, x, y)
-    //     mio.writeModel()
-
-    //     val filePath = "/Users/Raphael/CS/github.com/DBest/src/main/resources/models/linreg/_c13_c20"
-    //     assert(Files.exists(Paths.get(filePath)))
-    // }
-
-    // test("ModelIO.writeModel for SparkKernelDensity") {
-        
-    //     val x = Array("_c13")
-    //     val y = "_c20"
-        
-    //     val kd = new SparkKernelDensity()
-    //     val model = kd.fit(df, x)
-    //     val mio = new ModelIO(model, x, y)
-    //     mio.writeModel()
-
-    //     val filePath = "/Users/Raphael/CS/github.com/DBest/src/main/resources/models/kd/_c13"
-    //     val bool = new File(filePath).isFile
-    //     logger.info(s"runtime boolean value: $bool")
-    //     assert(bool)
-    // }
-
-    // test("ModelIO.readModel for Kernel Density with random df") {
-    //     def randomDouble1to100 = scala.util.Random.nextDouble * 100
-
-    //     import spark.implicits._
-    //     val dfRdm = spark.sparkContext
-    //         .parallelize(
-    //             Seq.fill(100){(randomDouble1to100,randomDouble1to100,randomDouble1to100)}
-    //         )
-    //         .toDF("col1", "col2", "col3")
-        
-    //     val x = Array("col1")
-    //     val y = "col3"
-
-    //     //Write KD model
-    //     val kd = new SparkKernelDensity()
-    //     val model = kd.fit(dfRdm, x)
-
-    //     val mio = new ModelIO(x, y)
-    //     mio.writeModel(model)
-
-    //     //Read KD Model
-    //     val modelRead = mio.readModel(model).asInstanceOf[SparkKernelDensity]
-
-        
-    //     // logger.info(model)
-    //     // logger.info(modelRead)
-
-    //     modelRead.kd
-    //     spark.sparkContext.parallelize()
-    //     val toPredict = Array.fill(10){randomDouble1to100}
-    //     val modPred = model.predict(toPredict)
-    //     val modReadPred = modelRead.predict(toPredict)
-
-    //     assert(modPred.deep == modReadPred.deep)
-    // }   
-
-
-    // test("ModelIO.readModel for LinearRegression with random df") {
-    //     def randomInt1to100 = scala.util.Random.nextInt(100)+1
-
-    //     import spark.implicits._
-    //     val dfRdm = spark.sparkContext
-    //         .parallelize(
-    //             Seq.fill(100){(randomInt1to100,randomInt1to100,randomInt1to100)}
-    //         )
-    //         .toDF("col1", "col2", "col3")
-        
-    //     val x = Array("col1")
-    //     val y = "col3"
-
-    //     //Write KD model
-    //     val reg = new LinearRegressor()
-    //     val regFit = reg.fit(dfRdm, x, y)
-
-    //     val mio = new ModelIO(x, y)
-    //     mio.writeModel(regFit)
-
-    //     //Read KD Model
-    //     val modelRead = mio.readModel(regFit)
-        
-    //     assert(regFit.equals(modelRead))
-    // }   
 
     
 }
