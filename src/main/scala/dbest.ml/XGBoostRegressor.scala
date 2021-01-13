@@ -31,15 +31,16 @@ class DBEstXGBoostRegressor extends DBEstRegressor with DBEstModel {
   }
 
   def crossValidate(trainingSet: DataFrame, numFolds: Int, numWorkers: Int) = {
+    logger.info("Crossvalidation of LinearRegressor Started...")
     val xgbRegressor  = new XGBoostRegressor(xgbParam)
       .setFeaturesCol("features")
       .setLabelCol("label")
       .setNumWorkers(numWorkers)
 
     val paramGrid = new ParamGridBuilder()
-      .addGrid(xgbRegressor.maxDepth, Array(2, 4, 6))
-      .addGrid(xgbRegressor.eta,  Array(0.3, 0.2, 0.1))
-      .addGrid(xgbRegressor.numRound, Array(2, 3, 4))
+      .addGrid(xgbRegressor.maxDepth, Array(2, 4))
+      .addGrid(xgbRegressor.eta,  Array(0.3))
+      .addGrid(xgbRegressor.numRound, Array(2, 3))
       .build()
  
     val evaluator = new RegressionEvaluator()

@@ -1,4 +1,4 @@
-package Sampler
+package sampler
 
 import org.apache.spark.sql.DataFrame
 

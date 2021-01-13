@@ -19,7 +19,7 @@ import org.apache.log4j.{Level, Logger}
 import dbest.ml.ModelWrapper
 import traits.Analyser
 import scala.collection.mutable.Map
-import Sampler.Sampler._
+import sampler.Sampler._
 
 
 class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String, Double], var dfMaxs: Map[String, Double]) extends Analyser {

@@ -9,11 +9,10 @@ import org.apache.spark.sql.{functions => F}
 import org.apache.spark.mllib.stat.KernelDensity
 import dbest.ml.ModelWrapper
 import engine._
-import DataLoader._
 import org.apache.spark.ml.regression.LinearRegressionModel
 import javassist.NotFoundException
 import java.io.FileNotFoundException
-import Sampler.Sampler._
+import sampler.Sampler._
 import settings.Settings
 import scala.collection.mutable.Map
 import traits.Analyser
@@ -44,14 +43,21 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
     }
   }
 
-  def loadHDFSTable(path: String, tableName: String) {
+  def loadHDFSTable(path: String, tableName: String, format: String = "csv") {
 
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    logger.info("path: " + path)
     val fileExists = fs.exists(new Path(path))
     if (fileExists) {
-      df = spark.read.parquet(path)
-                .repartition((4 * settings.numberOfCores).toInt)
-                .cache()
+      df = spark.read.format(format)
+                .option("delimiter", "|")
+                .load(path)
+                .repartition((1 * settings.numberOfCores).toInt)
+                .withColumn("ss_wholesale_cost", F.col("_c11").cast(DoubleType))
+                .withColumn("ss_list_price", F.col("_c12").cast(DoubleType))
+                .select("ss_list_price", "ss_wholesale_cost")
+                .na.drop()
+                // .cache()
       df.createOrReplaceTempView(tableName)
       getOfflineStats(df)
     } else {
@@ -59,19 +65,17 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
     }
   }
 
-  def loadTable(path: String, tableName: String, format: String = "parquet") {
-    val dload = new DataLoader
-
+  def loadTable(path: String, tableName: String, format: String = "csv") {
     if (Files.exists(Paths.get(path))) {
-      val tmpDf = dload.loadTable(spark, path, tableName, format)
-                .repartition((4 * settings.numberOfCores).toInt)
-      // Temporary implementation specific to store_sales.dat
-      df = tmpDf.withColumn("ss_wholesale_cost", F.col("_c11").cast(DoubleType))
-              .withColumn("ss_list_price", F.col("_c12").cast(DoubleType))
-              .select("ss_list_price", "ss_wholesale_cost")
-              .na.drop()
-              .cache()
-      ///
+      df = spark.read.format(format)
+            .option("delimiter", "|")
+            .load("file:///" + path)
+            .repartition((1 * settings.numberOfCores).toInt)
+            .withColumn("ss_wholesale_cost", F.col("_c11").cast(DoubleType))
+            .withColumn("ss_list_price", F.col("_c12").cast(DoubleType))
+            .select("ss_list_price", "ss_wholesale_cost")
+            .na.drop()
+            //.cache()
       df.createOrReplaceTempView(tableName)
       getOfflineStats(df)
     } else {

@@ -11,6 +11,7 @@ import scala.collection.mutable.Map
 import dbest.ml.ModelWrapper
 import better.files._
 import client._
+import dbest.dataprocessor._
 
 object TrainModels {
   def main(args: Array[String]) {
@@ -22,17 +23,18 @@ object TrainModels {
     val settings = new Settings(conf)
 
     // Training sample size
-    val sampleSize = List(0.001, 0.01, 0.1, 0.5, 1.0)
+    val sampleSize = List(1.0)
+    // val sampleSize = List(0.001)
 
     // Init training
     val client = new DBestClient(settings, appName)
-    var path = if(args.length == 1) System.getProperty("user.dir") + "/" + args(0) else ""
+    // var path = if(args.length == 1) System.getProperty("user.dir") + "/" + args(0) else ""
+    var path = if(args.length == 1) "hdfs:///" + args(0) else ""
     var tableName = ""
     if (settings.hdfsAvailable) {
-      // path = s"data/${agg}_df_${distribution}_label_10m.parquet"
-      // tableName = s"${agg}_df_${distribution}_label_10m"
-      // client.loadHDFSTable(path, tableName)
-      println("hello world")
+      path = if (path.isEmpty()) "hdfs:///data/store_sales.dat" else path
+      tableName = s"store_sales_sf10"
+      client.loadHDFSTable(path, tableName)
     } else {
       path = if (path.isEmpty) System.getProperty("user.dir") + "/data/store_sales_sample.dat" else path
       tableName = "store_sales_sample"
@@ -46,12 +48,13 @@ object TrainModels {
     var dfMaxs = client.dfMaxs
 
     // Dataframe processing
-    val dp = new dbest.dataprocessor.DataProcessor(df, features, label)
+    val dp = new DataProcessor(df, features, label)
     val processedDf = dp.processForRegression().getPreprocessedDF()
 
     // Training
     val t0 = System.nanoTime()
     for (trainingFrac <- sampleSize) {
+      logger.info(s"Training at $trainingFrac of the data")
       val mw = new ModelWrapper(settings, dfSize, dfMins, dfMaxs)
       mw.fitOrLoad("sum", processedDf, features, label, trainingFrac)
     }
@@ -59,6 +62,5 @@ object TrainModels {
 
     logger.info("Training time: " + ((t1-t0)*1E-9).toString())
     client.close()
-
   }
 }

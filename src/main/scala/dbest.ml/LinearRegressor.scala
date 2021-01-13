@@ -52,13 +52,14 @@ class LinearRegressor extends DBEstRegressor with DBEstModel {
     }
 
     def crossValidate(trainingSet: DataFrame, numFolds: Int, numWorkers: Int): CrossValidatorModel = {
+        logger.info("Crossvalidation of LinearRegressor Started...")
         val lr  = new LinearRegression()
             .setFeaturesCol("features")
             .setLabelCol("label")
 
         val paramGrid = new ParamGridBuilder()
             .addGrid(lr.regParam, Array(0.1, 0.01))
-            .addGrid(lr.elasticNetParam, Array(0.1, 0.5, 0.7, 0.9, 0.95, 0.99, 1.0))
+            .addGrid(lr.elasticNetParam, Array(0.1, 0.5, 0.7))
             .build()
 
         val evaluator = new RegressionEvaluator()

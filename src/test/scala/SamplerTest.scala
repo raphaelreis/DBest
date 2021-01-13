@@ -1,7 +1,7 @@
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
-import Sampler.Sampler._
+import sampler.Sampler._
 
 class SamplerTest extends AnyFunSuite {
     val logger = Logger.getLogger(this.getClass().getName())
@@ -19,9 +19,9 @@ class SamplerTest extends AnyFunSuite {
         .option("mode", "DROPMALFORMED")
         .load(fileName).drop("_c23")
 
-    test("Sampler.uniformSampling") {
+    test("sampler.uniformSampling") {
         val fraction = 0.2
-        // val sampler = new Sampler.Sampler(df)
+        // val sampler = new sampler.Sampler(df)
         val sampled_df = uniformSampling(df, fraction)
         logger.info("df count: " + df.count())
         logger.info("sampled_count: " + sampled_df.count())

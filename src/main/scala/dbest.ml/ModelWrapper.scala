@@ -12,7 +12,7 @@ import tools.makeDensityFileName.makeDensityFileName
 import breeze.linalg._
 import java.nio.file.{Paths, Files}
 import scala.io._
-import Sampler.Sampler._
+import sampler.Sampler._
 import settings.Settings
 import traits.Analyser
 import org.apache.spark.ml.tuning.CrossValidatorModel
@@ -34,6 +34,7 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
 
     def saveDensities(df: DataFrame, x: Array[String], evalSpacing: Double, trainingFrac: Double) = {
         if (!x.isEmpty) {
+            logger.info("Saving densities")
             val col = x(0)
             val density = new SparkKernelDensity(settings.defaultKernelBandWidth)
             val colRDD = df.select(col).rdd.map(_.getDouble(0)).cache()
@@ -68,7 +69,7 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
         var trainingDF = df
         // Get training fraction
         if (trainingFrac != 1.0) trainingDF = uniformSampling(df, trainingFrac)
-        
+        trainingDF = trainingDF.cache()
         // Save densities if not registered
         var unknownColumns = Array[String]()
         for (col <- x) {
@@ -87,12 +88,11 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
             //load or fit regression 
             if (mio.exists(reg)) {
                 logger.info("regression model exists and is loaded")
-                
                 reg = if(settings.modelType == "linear") mio.readModel(reg).asInstanceOf[LinearRegressor] 
                         else mio.readModel(reg).asInstanceOf[DBEstXGBoostRegressor]
             } else {
                 logger.info("regression does not exists and will be fit")
-                reg.crossValidate(df, settings.crossValNumFolds, settings.numWorkers)
+                reg.crossValidate(trainingDF, settings.crossValNumFolds, settings.numWorkers)
                 mio.writeModel(reg)
             }
         }

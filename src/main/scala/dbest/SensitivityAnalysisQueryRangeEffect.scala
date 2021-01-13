@@ -34,13 +34,13 @@ object SensitivityAnalysisQueryRangeEffect {
 
   // Experiment initialization
     val client: DBestClient = new DBestClient(settings, appName)
-    var path = if(args.length == 1) System.getProperty("user.dir") + "/" + args(0) else ""
+    // var path = if(args.length == 1) System.getProperty("user.dir") + "/" + args(0) else ""
+    var path = if(args.length == 1) "hdfs:///" + args(0) else ""
     var tableName = ""
     if (settings.hdfsAvailable) {
-    // path = s"data/${agg}_df_${distribution}_label_10m.parquet"
-    // tableName = s"${agg}_df_${distribution}_label_10m"
-    // client.loadHDFSTable(path, tableName)
-      println("hello world")
+      path = if (path.isEmpty()) "hdfs:///data/store_sales.dat" else path
+      tableName = s"store_sales_sf10"
+      client.loadHDFSTable(path, tableName)
     } else {
       path = if (path.isEmpty) System.getProperty("user.dir") + "/data/store_sales_sample.dat" else path
       tableName = "store_sales_sample"
