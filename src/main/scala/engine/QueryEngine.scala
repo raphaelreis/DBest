@@ -37,7 +37,6 @@ class QueryEngine(spark: SparkSession) extends Analyser {
         dfSize = size; dfMins = mins; dfMaxs = maxs
     }
 
-    
     def approxCountBySampling(x: Array[String], y: String, xMin: Double, xMax: Double) = {
         val col = x(0)
         // Compute Aggregation

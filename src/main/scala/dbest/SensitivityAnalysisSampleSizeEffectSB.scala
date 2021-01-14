@@ -56,6 +56,7 @@ object SensitivityAnalysisSampleSizeEffectSB {
     }
     val features = Array("ss_list_price")
     val label = "ss_wholesale_cost"
+    client.setFeaturesAndLabel(features, label)
 
   // Experiment
     for (sampleSize <- sampleSizes.sorted) {

@@ -61,29 +61,23 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
         }
     }
  
-    def fitOrLoad(aggFun: String, df: DataFrame, x: Array[String], y: String, trainingFrac: Double) {
-        
+    def fitOrLoad(aggFun: String, processedTrainingDF: DataFrame, x: Array[String], y: String, trainingFrac: Double) {
         val densityEvaluationSpacing = settings.densitiyInterspacEvaluation
-
-        var trainingDF = df
-        // Get training fraction
-        if (trainingFrac != 1.0) trainingDF = uniformSampling(df, trainingFrac)
-        trainingDF = trainingDF.cache()
         // Save densities if not registered
         var unknownColumns = Array[String]()
         for (col <- x) {
-            val path = makeDensityFileName(settings.dpath, df.drop("features", "label"), col, densityEvaluationSpacing, trainingFrac)
+            val path = makeDensityFileName(settings.dpath, processedTrainingDF.drop("features", "label"), col, densityEvaluationSpacing, trainingFrac)
             if (!Files.exists(Paths.get(path))) 
                 unknownColumns = unknownColumns :+ col
         }
-        saveDensities(trainingDF, unknownColumns, densityEvaluationSpacing, trainingFrac)
+        saveDensities(processedTrainingDF, unknownColumns, densityEvaluationSpacing, trainingFrac)
 
         // Load all saved densities
-        loadDensities(df, x, densityEvaluationSpacing, trainingFrac)
+        loadDensities(processedTrainingDF, x, densityEvaluationSpacing, trainingFrac)
         
         // Fit or load regression
         if (aggFun != "count") {
-            val mio = new ModelIO(settings.rpath, df.drop("features", "label"), x, y, trainingFrac)
+            val mio = new ModelIO(settings.rpath, processedTrainingDF.drop("features", "label"), x, y, trainingFrac)
             //load or fit regression 
             if (mio.exists(reg)) {
                 logger.info("regression model exists and is loaded")
@@ -91,7 +85,7 @@ class ModelWrapper(settings: Settings, var dfSize: Long, var dfMins: Map[String,
                         else mio.readModel(reg).asInstanceOf[DBEstXGBoostRegressor]
             } else {
                 logger.info("regression does not exists and will be fit")
-                reg.crossValidate(trainingDF, settings.crossValNumFolds, settings.numWorkers)
+                reg.crossValidate(processedTrainingDF, settings.crossValNumFolds, settings.numWorkers)
                 mio.writeModel(reg)
             }
         }

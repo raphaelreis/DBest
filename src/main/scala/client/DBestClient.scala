@@ -13,19 +13,28 @@ import settings.Settings
 import engine.QueryEngine
 import dbest.ml.ModelWrapper
 import sampler.Sampler.uniformSampling
+import dbest.dataprocessor.DataProcessor
 
 class DBestClient (settings: Settings, appName: String = "DBEst Client") extends Analyser {
   val logger = Logger.getLogger(this.getClass().getName())
   var trainingFrac = 1.0
   var df: DataFrame = _
   var trainingDF: DataFrame = _
+  var processedTrainingDF: DataFrame = _
   var dfSize: Long = _
   var dfMins = Map[String, Double]()
   var dfMaxs = Map[String, Double]()
+  var features: Array[String] = _
+  var label: String = ""
   val spark: SparkSession = SparkSession.builder
     .appName(appName)
     .getOrCreate()
   val qe = new QueryEngine(spark)
+
+  def setFeaturesAndLabel(feat: Array[String], lab: String) {
+    features = feat
+    label = lab
+  }
 
   def setNewTrainingFrac(newTrainingFrac: Double) {
     if (newTrainingFrac != trainingFrac) {
@@ -43,6 +52,9 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
       trainingDF = df.cache()
       trainingDF.count()
     }
+    def dp = new DataProcessor(trainingDF, features, label)
+    processedTrainingDF = dp.processForRegression().getPreprocessedDF()
+    processedTrainingDF.count()
   }
 
   def getOfflineStats(df: DataFrame) {
@@ -71,7 +83,7 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
                 .cache()
       getOfflineStats(df)
       df.createOrReplaceTempView(tableName)
-    } else throw new FileNotFoundException("Table not found on HDFS")
+    } else throw new FileNotFoundException(s"Table at $path not found on HDFS")
   }
 
   def loadTable(path: String, tableName: String, format: String = "csv") {
@@ -132,54 +144,30 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
       label: String,
       a: Double,
       b: Double,
-      sampleSize: Int
-  ): (Double, Long) = {
-    val trainingFrac = sampleSize.toDouble / dfSize.toDouble
-    queryWithModel(settings, aggFun, features, label, a, b, trainingFrac)
-  }
-
-  def queryWithModel(
-      settings: Settings,
-      aggFun: String,
-      features: Array[String],
-      label: String,
-      a: Double,
-      b: Double,
       trainingFrac: Double = 1.0
   ) = aggFun match {
     case "count" => {
       //Model fitting
       val mw = new ModelWrapper(settings, dfSize, dfMins, dfMaxs)
-      mw.fitOrLoad("count", df, features, label, trainingFrac)
+      mw.fitOrLoad("count", processedTrainingDF, features, label, trainingFrac)
 
       // Aggregation evaluation
       val (count, elipseTime) = qe.approxCount(mw, features, label, a, b)
       (count, elipseTime)
     }
     case "sum" => {
-      // Dataframe processing
-      val dp = new dbest.dataprocessor.DataProcessor(df, features, label)
-      val processedDf = dp.processForRegression().getPreprocessedDF()
-
       // Model fitting
       val mw = new ModelWrapper(settings, dfSize, dfMins, dfMaxs)
-      mw.fitOrLoad("sum", processedDf, features, label, trainingFrac)
+      mw.fitOrLoad("sum", processedTrainingDF, features, label, trainingFrac)
 
       //Aggregation evaluation
       val (sum, elipseTime) = qe.approxSum(mw, features, label, a, b)
       (sum, elipseTime)
     }
     case "avg" => {
-      val x = features
-      val y = label
-
-      // Dataframe processing
-      val dp = new dbest.dataprocessor.DataProcessor(df, x, y)
-      val processedDf = dp.processForRegression().getPreprocessedDF()
-
       // Model fitting
       val mw = new ModelWrapper(settings, dfSize, dfMins, dfMaxs)
-      mw.fitOrLoad("avg", processedDf, x, y, trainingFrac)
+      mw.fitOrLoad("avg", processedTrainingDF, x, y, trainingFrac)
 
       //Aggregation evaluation
       val (avg, elipseTime) = qe.approxAvg(mw, x, y, a, b)

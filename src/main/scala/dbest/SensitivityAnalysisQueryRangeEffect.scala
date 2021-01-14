@@ -35,20 +35,23 @@ object SensitivityAnalysisQueryRangeEffect {
 
   // Experiment initialization
     val client: DBestClient = new DBestClient(settings, appName)
-    // var path = if(args.length == 1) System.getProperty("user.dir") + "/" + args(0) else ""
-    var path = if(args.length == 1) "hdfs:///" + args(0) else ""
-    var tableName = ""
+     var tableName = ""
+    var path = if(args.length == 1 && settings.hdfsAvailable) "hdfs:///" + args(0) 
+                else if (args.length == 1 && !settings.hdfsAvailable) settings.baseDir + args(0)
+                else ""
+    
     if (settings.hdfsAvailable) {
       path = if (path.isEmpty()) "hdfs:///data/store_sales.dat" else path
       tableName = s"store_sales_sf10"
       client.loadHDFSTable(path, tableName)
     } else {
       path = if (path.isEmpty) System.getProperty("user.dir") + "/data/store_sales_sample.dat" else path
-      tableName = "store_sales_sample"
+      tableName = "store_sales"
       client.loadTable(path, tableName, "csv")
     }
     val features = Array("ss_list_price")
     val label = "ss_wholesale_cost"
+    client.setFeaturesAndLabel(features, label)
 
     for (range <- ranges.sorted) {
     // Experiment

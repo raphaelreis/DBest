@@ -53,6 +53,7 @@ object OverheadAnalysis {
     }
     val features = Array("ss_list_price")
     val label = "ss_wholesale_cost"
+    client.setFeaturesAndLabel(features, label)
     val df = client.df
     var dfSize = client.dfSize
     var dfMins = client.dfMins
