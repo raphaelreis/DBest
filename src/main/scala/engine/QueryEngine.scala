@@ -16,17 +16,30 @@ import dbest.ml.LinearRegressor
 import dbest.ml.GroupByModelWrapper
 import sampler.Sampler.uniformSampling
 
-class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String, Double], var dfMaxs: Map[String, Double]) extends Analyser {
+class QueryEngine(spark: SparkSession) extends Analyser {
     val logger = Logger.getLogger(this.getClass().getName())
-    
-    def approxCountBySampling(df: DataFrame, x: Array[String], y: String, xMin: Double, xMax: Double, sampleFrac: Double = 1d) = {
-        
-        val col = x(0)
-        val sampleWeight = 1.0 / sampleFrac
-        // Get training fraction
-        var trainingDF = df
-        if (sampleFrac != 1.0) trainingDF = uniformSampling(df, sampleFrac).cache()
 
+    var dfSize: Long = _
+    var dfMins: Map[String, Double] = _
+    var dfMaxs: Map[String, Double] = _
+    var trainingDF: DataFrame = _
+    var sampleFrac = 1.0 
+    def sampleWeight = 1.0 / sampleFrac
+
+    def setNewTrainingDF(newTrainingDF: DataFrame, samplingFrac: Double) {
+        sampleFrac = samplingFrac
+        trainingDF = newTrainingDF
+        if (!trainingDF.storageLevel.useMemory)
+            throw new Exception("Training DataFrame from Query Engine is not in Memory")
+    }
+
+    def setStats(size: Long, mins: Map[String, Double], maxs: Map[String, Double]) {
+        dfSize = size; dfMins = mins; dfMaxs = maxs
+    }
+
+    
+    def approxCountBySampling(x: Array[String], y: String, xMin: Double, xMax: Double) = {
+        val col = x(0)
         // Compute Aggregation
         val t0 = System.nanoTime()
         val count = trainingDF.select(col, y).rdd.mapPartitions {
@@ -42,7 +55,7 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
         (count, t1-t0)
     }
 
-    def approxCount(df: DataFrame, mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double, precision: Double) = {
+    def approxCount(mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double) = {
         val t0 = System.nanoTime()
 
         val densities = mw.getDensities()
@@ -71,13 +84,8 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
         (count, t1-t0)
     }
 
-    def approxSumBySampling(df: DataFrame, x: Array[String], y: String, xMin: Double, xMax: Double, sampleFrac: Double = 1d) = {
-        // Get training fraction
+    def approxSumBySampling(x: Array[String], y: String, xMin: Double, xMax: Double) = {
         val col = x(0)
-        val sampleWeight = 1.0 / sampleFrac
-        var trainingDF = df
-        if (sampleFrac != 1.0) trainingDF = uniformSampling(df, sampleFrac).cache()
-
         // Compute Aggregation
         val t0 = System.nanoTime()
         val sum = trainingDF.select(col, y).rdd.mapPartitions {
@@ -94,7 +102,7 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
     }
 
     // Only support univariate selection
-    def approxSum(df: DataFrame, mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double, precision: Double): (Double, Long) = {
+    def approxSum(mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double): (Double, Long) = {
         val t0 = System.nanoTime()
 
         val col = x(0)
@@ -146,20 +154,16 @@ class QueryEngine(spark: SparkSession, var dfSize: Long, var dfMins: Map[String,
         (sum, t1-t0)
     }
 
-    def approxAvgBySampling(df: DataFrame, x: Array[String], y: String, xMin: Double, xMax: Double, sampleFrac: Double) = {
-        // Get training fraction
-        var trainingDF = df
-        if (sampleFrac != 1.0) trainingDF = uniformSampling(df, sampleFrac)
-        
+    def approxAvgBySampling(x: Array[String], y: String, xMin: Double, xMax: Double) = {
         // Compute Aggregation
-        val (count, timeCount) = approxCountBySampling(trainingDF, x, y, xMin, xMax)
-        val (sum, timeSum) = approxSumBySampling(trainingDF, x, y, xMin, xMax)
+        val (count, timeCount) = approxCountBySampling(x, y, xMin, xMax)
+        val (sum, timeSum) = approxSumBySampling(x, y, xMin, xMax)
         (sum / count, timeCount + timeSum)
     }
 
-    def approxAvg(df: DataFrame, mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double, precision: Double): (Double, Long) = {
-        val (count, time1) = approxCount(df, mw, x, y, xMin, xMax, precision)
-        val (sum, time2) = approxSum(df, mw, x, y, xMin, xMax, precision)
+    def approxAvg(mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double): (Double, Long) = {
+        val (count, time1) = approxCount(mw, x, y, xMin, xMax)
+        val (sum, time2) = approxSum(mw, x, y, xMin, xMax)
         (sum / count, time1 + time2)
     }
 

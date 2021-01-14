@@ -2,7 +2,6 @@ package tools
 
 import math.round
 import scala.util.Try
-// import org.apache.spark.sql.types
 import org.apache.spark.sql.DataFrame
 import java.io.{File, FileWriter, BufferedWriter}
 

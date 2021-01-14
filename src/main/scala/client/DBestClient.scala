@@ -12,20 +12,37 @@ import traits.Analyser
 import settings.Settings
 import engine.QueryEngine
 import dbest.ml.ModelWrapper
+import sampler.Sampler.uniformSampling
 
 class DBestClient (settings: Settings, appName: String = "DBEst Client") extends Analyser {
   val logger = Logger.getLogger(this.getClass().getName())
+  var trainingFrac = 1.0
   var df: DataFrame = _
+  var trainingDF: DataFrame = _
   var dfSize: Long = _
   var dfMins = Map[String, Double]()
   var dfMaxs = Map[String, Double]()
-
   val spark: SparkSession = SparkSession.builder
     .appName(appName)
     .getOrCreate()
+  val qe = new QueryEngine(spark)
 
-  def close() = {
-    spark.stop()
+  def setNewTrainingFrac(newTrainingFrac: Double) {
+    if (newTrainingFrac != trainingFrac) {
+      trainingFrac = newTrainingFrac
+      updateTrainingDF()
+      qe.setNewTrainingDF(trainingDF, trainingFrac)
+    }
+  }
+
+  def updateTrainingDF() {
+    if(trainingFrac != 1.0) {
+      trainingDF = uniformSampling(df, trainingFrac).cache()
+      trainingDF.count()
+    } else {
+      trainingDF = df.cache()
+      trainingDF.count()
+    }
   }
 
   def getOfflineStats(df: DataFrame) {
@@ -36,10 +53,10 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
       dfMins += col -> minimum
       dfMaxs += col -> maximum
     }
+    qe.setStats(dfSize, dfMins, dfMaxs)
   }
 
   def loadHDFSTable(path: String, tableName: String, format: String = "csv") {
-
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     logger.info("path: " + path)
     val fileExists = fs.exists(new Path(path))
@@ -94,20 +111,17 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
   ) = aggFun match {
     case "count" => {
       // Aggregation evaluation
-      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
-      val (count, elipseTime) = qe.approxCountBySampling(df, features, label, a, b, trainingFrac)
+      val (count, elipseTime) = qe.approxCountBySampling(features, label, a, b)
       (count, elipseTime)
     }
     case "sum" => {
       //Aggregation evaluation
-      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
-      val (sum, elipseTime) = qe.approxSumBySampling(df, features, label, a, b, trainingFrac)
+      val (sum, elipseTime) = qe.approxSumBySampling(features, label, a, b)
       (sum, elipseTime)
     }
     case "avg" => {
       //Aggregation evaluation
-      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
-      val (avg, elipseTime) = qe.approxAvgBySampling(df, features, label, a, b, trainingFrac)
+      val (avg, elipseTime) = qe.approxAvgBySampling(features, label, a, b)
       (avg, elipseTime)
     }
     case _ =>
@@ -144,8 +158,7 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
       mw.fitOrLoad("count", df, features, label, trainingFrac)
 
       // Aggregation evaluation
-      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
-      val (count, elipseTime) = qe.approxCount(df, mw, features, label, a, b, 0.01)
+      val (count, elipseTime) = qe.approxCount(mw, features, label, a, b)
       (count, elipseTime)
     }
     case "sum" => {
@@ -158,8 +171,7 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
       mw.fitOrLoad("sum", processedDf, features, label, trainingFrac)
 
       //Aggregation evaluation
-      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
-      val (sum, elipseTime) = qe.approxSum(df, mw, features, label, a, b, 0.01)
+      val (sum, elipseTime) = qe.approxSum(mw, features, label, a, b)
       (sum, elipseTime)
     }
     case "avg" => {
@@ -175,13 +187,16 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
       mw.fitOrLoad("avg", processedDf, x, y, trainingFrac)
 
       //Aggregation evaluation
-      val qe = new engine.QueryEngine(spark, dfSize, dfMins, dfMaxs)
-      val (avg, elipseTime) = qe.approxAvg(df, mw, x, y, a, b, 0.01)
+      val (avg, elipseTime) = qe.approxAvg(mw, x, y, a, b)
       (avg, elipseTime)
     }
     case _ =>
       throw new NotImplementedError(
         "Please choose between count, sum and avg aggregation function"
       )
+  }
+
+  def close() = {
+    spark.stop()
   }
 }
