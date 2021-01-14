@@ -2,21 +2,46 @@
 
 start=$SECONDS
 
-overheadanalysis="spark-submit --class dbest.OverheadAnalysis --jars $(echo ./lib/*.jar | tr ' ' ',') ${(pwd)}/target/scala-2.11/dbest.jar data/sf100/store_sales.dat"
-sensitivsamplesize="spark-submit --class dbest.SensitivityAnalysisSampleSizeEffect --jars $(echo ./lib/*.jar | tr ' ' ',') ${(pwd)}/target/scala-2.11/dbest.jar data/sf100/store_sales.dat"
-sensitiverangeeff="spark-submit --class dbest.SensitivityAnalysisQueryRangeEffect --jars $(echo ./lib/*.jar | tr ' ' ',') ${(pwd)}/target/scala-2.11/dbest.jar data/sf100/store_sales.dat"
+dataset="data/sf100/store_sales.dat"
 
+current_dir="$(pwd)/"
+for last; do true; done
+if [ "$last" == "1" ] || [ "$last" == "2" ] || [ "$last" == "3" ]; then
+   last=""
+fi
+sample_size_eff_base="${last}"
+
+
+overheadanalysis="spark-submit \
+   --class dbest.OverheadAnalysis \
+   --jars $(echo ./lib/*.jar | tr ' ' ',') \
+   ${current_dir}target/scala-2.11/dbest.jar \
+   ${dataset}"
+
+sensitivsamplesize="spark-submit \
+   --class dbest.SensitivityAnalysisSampleSizeEffect${sample_size_eff_base} \
+   --jars $(echo ./lib/*.jar | tr ' ' ',') \
+   ${current_dir}target/scala-2.11/dbest.jar \
+   ${dataset}"
+
+sensitiverangeeff="spark-submit \
+   --class dbest.SensitivityAnalysisQueryRangeEffect \
+   --jars $(echo ./lib/*.jar | tr ' ' ',') \
+   ${current_dir}target/scala-2.11/dbest.jar \
+   ${dataset}"
+
+echo "$current_dir"
 echo "Starting spark jobs..."
-for i in "$@"; do
+for i in "${@:1:$#}"; do
    if [ "$i" == "1" ]; then
       echo "Starting dbest.OverheadAnalysis..."
       eval "$overheadanalysis"
       echo "dbest.OverheadAnalysis finished"
    fi
    if [ "$i" == "2" ]; then
-      echo "Starting dbest.SensitivityAnalysisSampleSizeEffect..."
+      echo "Starting dbest.SensitivityAnalysisSampleSizeEffect${sample_size_eff_base}..."
       eval "$sensitivsamplesize"
-      echo "dbest.SensitivityAnalysisSampleSizeEffect finished"
+      echo "dbest.SensitivityAnalysisSampleSizeEffect${sample_size_eff_base} finished"
    fi
    if [ "$i" == "3" ]; then
       echo "Starting dbest.SensitivityAnalysisQueryRangeEffect..."  
