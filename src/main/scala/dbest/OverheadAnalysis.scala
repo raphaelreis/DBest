@@ -71,7 +71,7 @@ object OverheadAnalysis {
     val densitiesDir = (settings.dpath).toFile
     val regressionsDir = (settings.rpath).toFile
 
-    for (trainingFrac <- sampleSize) {
+    for (trainingFrac <- sampleSize.sorted) {
       densitiesDir.clear()
       regressionsDir.clear()
       val mw = new ModelWrapper(settings, dfSize, dfMins, dfMaxs)

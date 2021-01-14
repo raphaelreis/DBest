@@ -24,8 +24,8 @@ object TrainModels {
     val settings = new Settings(conf)
 
     // Training sample size
-    // val sampleSize = List(0.001, 0.01, 0.1, 0.5, 1.0)
-    val sampleSize = List(0.5, 1.0)
+    val sampleSize = List(0.001, 0.01, 0.1, 0.5, 1.0)
+    // val sampleSize = List(0.5, 1.0)
 
     // Init training
     val client = new DBestClient(settings, appName)
@@ -54,7 +54,7 @@ object TrainModels {
 
     // Training
     val t0 = System.nanoTime()
-    for (trainingFrac <- sampleSize) {
+    for (trainingFrac <- sampleSize.sorted) {
       logger.info(s"Training at $trainingFrac of the data")
       val mw = new ModelWrapper(settings, dfSize, dfMins, dfMaxs)
       mw.fitOrLoad("sum", processedDf, features, label, trainingFrac)

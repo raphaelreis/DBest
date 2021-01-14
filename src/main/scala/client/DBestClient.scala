@@ -58,7 +58,6 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
 
   def loadHDFSTable(path: String, tableName: String, format: String = "csv") {
     val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    logger.info("path: " + path)
     val fileExists = fs.exists(new Path(path))
     if (fileExists) {
       df = spark.read.format(format)
@@ -69,12 +68,10 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
                 .withColumn("ss_list_price", F.col("_c12").cast(DoubleType))
                 .select("ss_list_price", "ss_wholesale_cost")
                 .na.drop()
-                // .cache()
-      df.createOrReplaceTempView(tableName)
+                .cache()
       getOfflineStats(df)
-    } else {
-      throw new FileNotFoundException("Table not found on HDFS")
-    }
+      df.createOrReplaceTempView(tableName)
+    } else throw new FileNotFoundException("Table not found on HDFS")
   }
 
   def loadTable(path: String, tableName: String, format: String = "csv") {
@@ -87,12 +84,10 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
             .withColumn("ss_list_price", F.col("_c12").cast(DoubleType))
             .select("ss_list_price", "ss_wholesale_cost")
             .na.drop()
-            //.cache()
-      df.createOrReplaceTempView(tableName)
+            .cache()
       getOfflineStats(df)
-    } else {
-      throw new FileNotFoundException("Table does not exist on the path: " + path)
-    }
+      df.createOrReplaceTempView(tableName)
+    } else throw new FileNotFoundException("Table does not exist on the path: " + path)
   }
 
   def query(q: String) = {

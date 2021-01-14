@@ -22,17 +22,12 @@ object SensitivityAnalysisSampleSizeEffectMB {
   // Results directories
     val resultsDir = settings.resultsFolder
     val dirModelBased = resultsDir + "sensitive_analysis/sample_size/model_based/"
-    // val dirSampleBased = resultsDir + "sensitive_analysis/sample_size/sample_based/"
     val subdirErr = "relative_error/"
     val subdirTime = "response_time/"
     var errFileNameMB = ""
     var timeFileNameMB = ""
-    // var errFileNameSB = ""
-    // var timeFileNameSB = ""
     def errPathMB = dirModelBased + subdirErr + errFileNameMB
     def timePathMB = dirModelBased + subdirTime + timeFileNameMB
-    // def errPathSB = dirSampleBased + subdirErr  + errFileNameSB
-    // def timePathSB = dirSampleBased + subdirTime + timeFileNameSB
 
   // Experiment parameter
     val sampleSizes = List(0.001, 0.01, 0.1, 0.5, 1.0)
@@ -62,19 +57,15 @@ object SensitivityAnalysisSampleSizeEffectMB {
     val label = "ss_wholesale_cost"
 
   // Experiment
-    for (sampleSize <- sampleSizes) {
+    for (sampleSize <- sampleSizes.sorted) {
       logger.info(s"Sample size: $sampleSize")
       client.setNewTrainingFrac(sampleSize)
     // Model-Based Results
       val errMapMB = Map[String, Double]()
       val timeMapMB = Map[String, Long]()
-    // Sample-Based Results
-      // val errMapSB = Map[String, Double]()
-      // val timeMapSB = Map[String, Long]()
 
       aggregationFunctions.foreach { af =>
         errMapMB += af -> 0.0; timeMapMB += af -> 0L;
-        // errMapSB += af -> 0.0; timeMapSB += af -> 0L;
       }
       for (af <- aggregationFunctions) {
         val ranges = json(af.toUpperCase()).as[List[List[Double]]]
@@ -101,30 +92,13 @@ object SensitivityAnalysisSampleSizeEffectMB {
           val relErrMB = (exactRes - approxResMB) / exactRes
           errMapMB(af) += relErrMB / queriesAfNumber
           timeMapMB(af) += timeMB / queriesAfNumber.toLong
-
-          // val (approxResSB, timeSB) = client.queryWithSample(
-          //   settings,
-          //   af,
-          //   features,
-          //   label,
-          //   a,
-          //   b,
-          //   sampleSize
-          // )
-          // val relErrSB = (exactRes - approxResSB) / exactRes
-          // errMapSB(af) += relErrSB / queriesAfNumber
-          // timeMapSB(af) += timeSB / queriesAfNumber.toLong    
         }
       }
 
       val finalErrMapMB = errMapMB.mapValues(v => if(v.isInfinite()) Double.MinValue else v)
       val finalTimeMapMB = timeMapMB.mapValues(v => if(v.isInfinite()) Double.MinValue else v)
-      // val finalErrMapSB = errMapSB.mapValues(v => if(v.isInfinite()) Double.MinValue else v)
-      // val finalTimeMapSB = timeMapSB.mapValues(v => if(v.isInfinite()) Double.MinValue else v)
       val errStringMB = Json.stringify(Json.toJson(finalErrMapMB))
       val timeStringMB = Json.stringify(Json.toJson(finalTimeMapMB))
-      // val errStringSB = Json.stringify(Json.toJson(finalErrMapSB))
-      // val timeStringSB = Json.stringify(Json.toJson(finalTimeMapSB))
       
     // Write Model-Based Results
       errFileNameMB = s"relative_error_$sampleSize.json"
@@ -133,17 +107,8 @@ object SensitivityAnalysisSampleSizeEffectMB {
       new PrintWriter(errPathMB) { write(errStringMB); close() }
       new PrintWriter(timePathMB) { write(timeStringMB); close() }
       
-    // Write Sample-Based Results
-      // errFileNameSB = s"relative_error_$sampleSize.json"
-      // timeFileNameSB = s"relative_error_$sampleSize.json"
-      
-      // new PrintWriter(errPathSB) { write(errStringSB); close() }
-      // new PrintWriter(timePathSB) { write(timeStringSB); close() }
-      
       logger.info("errStringMB: " + errStringMB)
       logger.info("timeStringMB: " + timeStringMB)
-      // logger.info("errStringSB: " + errStringSB)
-      // logger.info("timeStringSB: " + timeStringSB)
     }
     client.close()
   }

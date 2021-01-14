@@ -62,7 +62,7 @@ object SensitivityAnalysisSampleSizeEffect {
     val label = "ss_wholesale_cost"
 
   // Experiment
-    for (sampleSize <- sampleSizes) {
+    for (sampleSize <- sampleSizes.sorted) {
       logger.info(s"Sample size: $sampleSize")
       client.setNewTrainingFrac(sampleSize)
     // Model-Based Results

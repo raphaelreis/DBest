@@ -50,7 +50,7 @@ object SensitivityAnalysisQueryRangeEffect {
     val features = Array("ss_list_price")
     val label = "ss_wholesale_cost"
 
-    for (range <- ranges) {
+    for (range <- ranges.sorted) {
     // Experiment
     //// load queries
       val fileName =
