@@ -1,7 +1,6 @@
 project/
 target/
 src/main/resources/
-data/
 specification.pdf
 excel/
 results/
@@ -11,5 +10,4 @@ tmp/
 models/
 src/main/python/App_dev.ipynb
 scripts/download_results.sh
-lib/
 conf/application.conf
