@@ -54,7 +54,7 @@ class QueryEngine(spark: SparkSession) extends Analyser {
         (count, t1-t0)
     }
 
-    def approxCount(mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double) = {
+    def approxCount(mw: ModelWrapper, xMin: Double, xMax: Double) = {
         val t0 = System.nanoTime()
 
         val densities = mw.getDensities()
@@ -161,7 +161,7 @@ class QueryEngine(spark: SparkSession) extends Analyser {
     }
 
     def approxAvg(mw: ModelWrapper, x: Array[String], y: String, xMin: Double, xMax: Double): (Double, Long) = {
-        val (count, time1) = approxCount(mw, x, y, xMin, xMax)
+        val (count, time1) = approxCount(mw, xMin, xMax)
         val (sum, time2) = approxSum(mw, x, y, xMin, xMax)
         (sum / count, time1 + time2)
     }

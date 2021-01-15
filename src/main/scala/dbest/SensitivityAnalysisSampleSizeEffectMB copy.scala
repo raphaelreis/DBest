@@ -31,7 +31,7 @@ object SensitivityAnalysisSampleSizeEffectMB {
 
   // Experiment parameter
     val sampleSizes = List(0.001, 0.01, 0.1, 0.5, 1.0)
-    val aggregationFunctions = List("COUNT", "SUM", "avg")
+    val aggregationFunctions = List("count", "sum", "avg")
 
   // load queries
     val fileName = "experiments/sensitivity_analysis_sampleSize_queries.json"

@@ -152,7 +152,7 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
       mw.fitOrLoad("count", processedTrainingDF, features, label, trainingFrac)
 
       // Aggregation evaluation
-      val (count, elipseTime) = qe.approxCount(mw, features, label, a, b)
+      val (count, elipseTime) = qe.approxCount(mw, a, b)
       (count, elipseTime)
     }
     case "sum" => {
@@ -167,10 +167,10 @@ class DBestClient (settings: Settings, appName: String = "DBEst Client") extends
     case "avg" => {
       // Model fitting
       val mw = new ModelWrapper(settings, dfSize, dfMins, dfMaxs)
-      mw.fitOrLoad("avg", processedTrainingDF, x, y, trainingFrac)
+      mw.fitOrLoad("avg", processedTrainingDF, features, label, trainingFrac)
 
       //Aggregation evaluation
-      val (avg, elipseTime) = qe.approxAvg(mw, x, y, a, b)
+      val (avg, elipseTime) = qe.approxAvg(mw, features, label, a, b)
       (avg, elipseTime)
     }
     case _ =>
