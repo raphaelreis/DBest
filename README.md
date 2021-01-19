@@ -1,5 +1,3 @@
-# 
-Approximate Query Processing Engines with Machine Learning Models
 
 <!-- PROJECT LOGO -->
 <br />
